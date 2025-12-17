@@ -204,6 +204,21 @@ struct cracen_sw_ccm_context_s {
 };
 typedef struct cracen_sw_ccm_context_s cracen_sw_ccm_context_t;
 
+struct cracen_sw_gcm_context_s {
+	uint8_t h[SX_BLKCIPHER_AES_BLK_SZ]; /* Initial H value */
+	uint8_t ghash_block[SX_BLKCIPHER_AES_BLK_SZ]; /* GHASH calculation result */
+	uint8_t ctr_block[SX_BLKCIPHER_AES_BLK_SZ]; /* Counter block for CTR mode */
+	uint8_t keystream[SX_BLKCIPHER_AES_BLK_SZ]; /* Generated keystream */
+	uint8_t partial_block[SX_BLKCIPHER_AES_BLK_SZ]; /* Buffer for partial blocks */
+	size_t keystream_offset; /* Position in keystream buffer */
+	size_t total_ad_fed; /* Total AD bytes processed */
+	size_t total_data_enc; /* Total size of the ciphertext */
+	size_t data_partial_len; /* Partial data block length */
+	bool ctr_initialized; /* CTR initialization flag */
+	bool ghash_initialized; /* GHASH initialization flag */
+};
+typedef struct cracen_sw_gcm_context_s cracen_sw_gcm_context_t;
+
 struct cracen_aead_operation {
 	psa_algorithm_t alg;
 	struct sxkeyref keyref;
@@ -220,8 +235,16 @@ struct cracen_aead_operation {
 	bool ad_finished;
 	struct sxaead ctx;
 #if defined(CONFIG_PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS)
+#if defined(PSA_NEED_CRACEN_CCM_AES)
 	cracen_sw_ccm_context_t sw_ccm_ctx;
-#endif
+#endif /* PSA_NEED_CRACEN_CCM_AES */
+#endif /* CONFIG_PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS */
+
+#if defined(CONFIG_PSA_NEED_CRACEN_MULTIPART_WORKAROUNDS)
+#if defined(PSA_NEED_CRACEN_GCM_AES)
+	cracen_sw_gcm_context_t sw_gcm_ctx;
+#endif /* PSA_NEED_CRACEN_GCM_AES */
+#endif /* CONFIG_PSA_NEED_CRACEN_MULTIPART_WORKAROUNDS */
 };
 typedef struct cracen_aead_operation cracen_aead_operation_t;
 
