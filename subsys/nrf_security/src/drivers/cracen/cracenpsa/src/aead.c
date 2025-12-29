@@ -19,7 +19,7 @@
 #include <zephyr/sys/__assert.h>
 #include "common.h"
 
-#if defined(CONFIG_PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS)
+#if defined(PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS)
 #if defined(PSA_NEED_CRACEN_CCM_AES)
 #include <cracen_sw_aes_ccm.h>
 #endif /* PSA_NEED_CRACEN_CCM_AES */
@@ -27,7 +27,7 @@
 #if defined(PSA_NEED_CRACEN_GCM_AES)
 #include <cracen_sw_aes_gcm.h>
 #endif /* PSA_NEED_CRACEN_GCM_AES */
-#endif /* CONFIG_PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS */
+#endif /* PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS */
 
 #define CCM_HEADER_MAX_LENGTH 26
 
@@ -345,7 +345,7 @@ psa_status_t cracen_aead_encrypt_setup(cracen_aead_operation_t *operation,
 				       const uint8_t *key_buffer, size_t key_buffer_size,
 				       psa_algorithm_t alg)
 {
-#if defined(CONFIG_PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS)
+#if defined(PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS)
 	/* Route AES-CCM/GCM to software implementation due to HW having smaller max CTR size */
 #if defined(PSA_NEED_CRACEN_CCM_AES)
 	if (alg == PSA_ALG_CCM) {
@@ -360,7 +360,7 @@ psa_status_t cracen_aead_encrypt_setup(cracen_aead_operation_t *operation,
 						       key_buffer_size, alg);
 	}
 #endif /* PSA_NEED_CRACEN_GCM_AES */
-#endif /* CONFIG_PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS */
+#endif /* PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS */
 
 	return setup(operation, CRACEN_ENCRYPT, attributes, key_buffer, key_buffer_size, alg);
 }
@@ -370,7 +370,7 @@ psa_status_t cracen_aead_decrypt_setup(cracen_aead_operation_t *operation,
 				       const uint8_t *key_buffer, size_t key_buffer_size,
 				       psa_algorithm_t alg)
 {
-#if defined(CONFIG_PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS)
+#if defined(PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS)
 	/* Route AES-CCM/GCM to software implementation due to HW having smaller max CTR size */
 #if defined(PSA_NEED_CRACEN_CCM_AES)
 	if (alg == PSA_ALG_CCM) {
@@ -385,7 +385,7 @@ psa_status_t cracen_aead_decrypt_setup(cracen_aead_operation_t *operation,
 						       key_buffer_size, alg);
 	}
 #endif /* PSA_NEED_CRACEN_GCM_AES */
-#endif /* CONFIG_PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS */
+#endif /* PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS */
 
 	return setup(operation, CRACEN_DECRYPT, attributes, key_buffer, key_buffer_size, alg);
 }
@@ -406,7 +406,7 @@ static psa_status_t set_nonce(cracen_aead_operation_t *operation, const uint8_t 
 psa_status_t cracen_aead_set_nonce(cracen_aead_operation_t *operation, const uint8_t *nonce,
 				   size_t nonce_length)
 {
-#if defined(CONFIG_PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS)
+#if defined(PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS)
 	/* Route AES-CCM/GCM to software implementation due to HW having smaller max CTR size */
 #if defined(PSA_NEED_CRACEN_CCM_AES)
 	if (operation->alg == PSA_ALG_CCM) {
@@ -419,7 +419,7 @@ psa_status_t cracen_aead_set_nonce(cracen_aead_operation_t *operation, const uin
 		return cracen_sw_aes_gcm_set_nonce(operation, nonce, nonce_length);
 	}
 #endif /* PSA_NEED_CRACEN_GCM_AES */
-#endif /* CONFIG_PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS */
+#endif /* PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS */
 
 	psa_status_t status;
 
@@ -453,7 +453,7 @@ static psa_status_t set_lengths(cracen_aead_operation_t *operation, size_t ad_le
 psa_status_t cracen_aead_set_lengths(cracen_aead_operation_t *operation, size_t ad_length,
 				     size_t plaintext_length)
 {
-#if defined(CONFIG_PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS)
+#if defined(PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS)
 	/* Route AES-CCM/GCM to software implementation due to HW having smaller max CTR size */
 #if defined(PSA_NEED_CRACEN_CCM_AES)
 	if (operation->alg == PSA_ALG_CCM) {
@@ -466,7 +466,7 @@ psa_status_t cracen_aead_set_lengths(cracen_aead_operation_t *operation, size_t 
 		return cracen_sw_aes_gcm_set_lengths(operation, ad_length, plaintext_length);
 	}
 #endif /* PSA_NEED_CRACEN_GCM_AES */
-#endif /* CONFIG_PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS */
+#endif /* PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS */
 
 	return set_lengths(operation, ad_length, plaintext_length);
 }
@@ -581,7 +581,7 @@ static __maybe_unused psa_status_t cracen_aead_update_internal(
 psa_status_t cracen_aead_update_ad(cracen_aead_operation_t *operation, const uint8_t *input,
 				   size_t input_length)
 {
-#if defined(CONFIG_PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS)
+#if defined(PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS)
 	/* Route AES-CCM/GCM to software implementation due to HW having smaller max CTR size */
 #if defined(PSA_NEED_CRACEN_CCM_AES)
 	if (operation->alg == PSA_ALG_CCM) {
@@ -594,7 +594,7 @@ psa_status_t cracen_aead_update_ad(cracen_aead_operation_t *operation, const uin
 		return cracen_sw_aes_gcm_update_ad(operation, input, input_length);
 	}
 #endif /* PSA_NEED_CRACEN_GCM_AES */
-#endif /* CONFIG_PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS */
+#endif /* PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS */
 
 	return cracen_aead_update_internal(operation, input, input_length, NULL, 0, NULL, true);
 }
@@ -603,7 +603,7 @@ psa_status_t cracen_aead_update(cracen_aead_operation_t *operation, const uint8_
 				size_t input_length, uint8_t *output, size_t output_size,
 				size_t *output_length)
 {
-#if defined(CONFIG_PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS)
+#if defined(PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS)
 	/* Route AES-CCM/GCM to software implementation due to HW having smaller max CTR size */
 #if defined(PSA_NEED_CRACEN_CCM_AES)
 	if (operation->alg == PSA_ALG_CCM) {
@@ -618,7 +618,7 @@ psa_status_t cracen_aead_update(cracen_aead_operation_t *operation, const uint8_
 						output_length);
 	}
 #endif /* PSA_NEED_CRACEN_GCM_AES */
-#endif /* CONFIG_PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS */
+#endif /* PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS */
 
 	/*
 	 * Even if no plain/ciphertext is provided we still wanna have one block
@@ -682,7 +682,7 @@ psa_status_t cracen_aead_finish(cracen_aead_operation_t *operation, uint8_t *cip
 				size_t ciphertext_size, size_t *ciphertext_length, uint8_t *tag,
 				size_t tag_size, size_t *tag_length)
 {
-#if defined(CONFIG_PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS)
+#if defined(PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS)
 	/* Route AES-CCM/GCM to software implementation due to HW having smaller max CTR size */
 #if defined(PSA_NEED_CRACEN_CCM_AES)
 	if (operation->alg == PSA_ALG_CCM) {
@@ -697,7 +697,7 @@ psa_status_t cracen_aead_finish(cracen_aead_operation_t *operation, uint8_t *cip
 						ciphertext_length, tag, tag_size, tag_length);
 	}
 #endif /* PSA_NEED_CRACEN_GCM_AES */
-#endif /* CONFIG_PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS */
+#endif /* PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS */
 
 	psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
 
@@ -746,7 +746,7 @@ psa_status_t cracen_aead_verify(cracen_aead_operation_t *operation, uint8_t *pla
 				size_t plaintext_size, size_t *plaintext_length, const uint8_t *tag,
 				size_t tag_length)
 {
-#if defined(CONFIG_PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS)
+#if defined(PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS)
 	/* Route AES-CCM/GCM to software implementation due to HW having smaller max CTR size */
 #if defined(PSA_NEED_CRACEN_CCM_AES)
 	if (operation->alg == PSA_ALG_CCM) {
@@ -761,7 +761,7 @@ psa_status_t cracen_aead_verify(cracen_aead_operation_t *operation, uint8_t *pla
 						plaintext_length, tag, tag_length);
 	}
 #endif /* PSA_NEED_CRACEN_GCM_AES */
-#endif /* CONFIG_PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS */
+#endif /* PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS */
 
 	psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
 
@@ -791,7 +791,7 @@ psa_status_t cracen_aead_verify(cracen_aead_operation_t *operation, uint8_t *pla
 
 psa_status_t cracen_aead_abort(cracen_aead_operation_t *operation)
 {
-#if defined(CONFIG_PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS)
+#if defined(PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS)
 	/* Route AES-CCM/GCM to software implementation due to HW having smaller max CTR size */
 #if defined(PSA_NEED_CRACEN_CCM_AES)
 	if (operation->alg == PSA_ALG_CCM) {
@@ -804,7 +804,7 @@ psa_status_t cracen_aead_abort(cracen_aead_operation_t *operation)
 		return cracen_sw_aes_gcm_abort(operation);
 	}
 #endif /* PSA_NEED_CRACEN_GCM_AES */
-#endif /* CONFIG_PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS */
+#endif /* PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS */
 
 	safe_memzero((void *)operation, sizeof(cracen_aead_operation_t));
 	return PSA_SUCCESS;
@@ -863,7 +863,7 @@ psa_status_t cracen_aead_encrypt(const psa_key_attributes_t *attributes, const u
 				 size_t plaintext_length, uint8_t *ciphertext,
 				 size_t ciphertext_size, size_t *ciphertext_length)
 {
-#if defined(CONFIG_PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS) && defined(PSA_NEED_CRACEN_CCM_AES)
+#if defined(PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS) && defined(PSA_NEED_CRACEN_CCM_AES)
 	/* Route AES-CCM to software implementation due to HW having smaller max CTR size */
 	if (alg == PSA_ALG_CCM) {
 		return cracen_sw_aes_ccm_encrypt(
@@ -939,7 +939,7 @@ psa_status_t cracen_aead_decrypt(const psa_key_attributes_t *attributes, const u
 				 size_t ciphertext_length, uint8_t *plaintext,
 				 size_t plaintext_size, size_t *plaintext_length)
 {
-#if defined(CONFIG_PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS) && defined(PSA_NEED_CRACEN_CCM_AES)
+#if defined(PSA_NEED_CRACEN_CTR_SIZE_WORKAROUNDS) && defined(PSA_NEED_CRACEN_CCM_AES)
 	/* Route AES-CCM to software implementation due to HW having smaller max CTR size */
 	if (alg == PSA_ALG_CCM) {
 		return cracen_sw_aes_ccm_decrypt(
