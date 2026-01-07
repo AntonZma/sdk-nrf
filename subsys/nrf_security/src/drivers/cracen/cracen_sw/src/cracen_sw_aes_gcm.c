@@ -24,6 +24,13 @@
 #include <zephyr/sys/util.h>
 #include <zephyr/sys/__assert.h>
 
+// #include <psa/crypto_extra.h>
+// #include <silexpk/cmddefs/ecc.h>
+// #include <silexpk/ec_curves.h>
+#include <silexpk/sxbuf/sxbufop.h>
+#include <silexpk/sxops/eccweierstrass.h>
+#include <silexpk/sxops/rsa.h>
+
 #include <cracen_psa_primitives.h>
 #include "../../../cracenpsa/src/common.h"
 #include "gcm_ext.h"
@@ -77,6 +84,26 @@ static void encode_big_endian_length(uint8_t *buffer, size_t buffer_size, size_t
 	}
 }
 
+void mult(const uint8_t *h, const uint8_t *x, uint8_t *output)
+{
+	int sx_status = 0;
+	const struct sx_pk_cmd_def *cmd_mul = SX_PK_CMD_ODD_MOD_MULT;
+
+	uint8_t mod_buf[SX_BLKCIPHER_AES_BLK_SZ] = {0xE1};
+
+	sx_const_op modulo = {.sz = SX_BLKCIPHER_AES_BLK_SZ, .bytes = mod_buf};
+
+	sx_const_op h_op = {.sz = SX_BLKCIPHER_AES_BLK_SZ, .bytes = h};
+	sx_const_op x_op = {.sz = SX_BLKCIPHER_AES_BLK_SZ, .bytes = x};
+	sx_op res = {.sz = SX_BLKCIPHER_AES_BLK_SZ, .bytes = output};
+
+	sx_status = sx_mod_primitive_cmd(NULL, cmd_mul, &modulo, &h_op, &x_op, &res);
+	sx_status = silex_statuscodes_to_psa(sx_status);
+	if (sx_status != SX_OK) {
+		// return sx_status;
+	}
+}
+
 /** GHASH_H(X1 || X2 || ... || Xm) = Ym
  *  Note: the current implementation follows NIST SP800-38D,
  *  no Shoup's tables are used now
@@ -95,7 +122,8 @@ static void calc_gcm_ghash(cracen_aead_operation_t *operation, const uint8_t *in
 			 */
 			cracen_xorbytes(gcm_ctx->ghash_block, gcm_ctx->partial_block,
 					SX_BLKCIPHER_AES_BLK_SZ);
-			gcm_ext_mult(gcm_ctx->h_table, gcm_ctx->ghash_block, result);
+			// gcm_ext_mult(gcm_ctx->h_table, gcm_ctx->ghash_block, result);
+			mult(gcm_ctx->h, gcm_ctx->ghash_block, result);
 			memcpy(gcm_ctx->ghash_block, result, SX_BLKCIPHER_AES_BLK_SZ);
 			gcm_ctx->data_partial_len = 0;
 		}
@@ -133,16 +161,16 @@ static psa_status_t initialize_gcm_h(cracen_aead_operation_t *operation,
 {
 	cracen_sw_gcm_context_t *gcm_ctx = &operation->sw_gcm_ctx;
 	const uint8_t zero[SX_BLKCIPHER_AES_BLK_SZ] = {};
-	uint8_t h[SX_BLKCIPHER_AES_BLK_SZ] = {};
+	// uint8_t h[SX_BLKCIPHER_AES_BLK_SZ] = {};
 	psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
 
 	if (gcm_ctx->ghash_initialized) {
 		return PSA_SUCCESS;
 	}
-	status = cracen_aes_primitive(cipher, &operation->keyref, zero, h);
+	status = cracen_aes_primitive(cipher, &operation->keyref, zero, gcm_ctx->h /*h*/);
 
 	if (status == PSA_SUCCESS) {
-		gcm_ext_gen_table(h, gcm_ctx->h_table);
+		// gcm_ext_gen_table(h, gcm_ctx->h_table);
 		gcm_ctx->ghash_initialized = true;
 	}
 	return status;
