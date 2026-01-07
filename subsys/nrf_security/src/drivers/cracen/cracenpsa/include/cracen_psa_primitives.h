@@ -21,9 +21,11 @@
 #define SX_BLKCIPHER_IV_SZ	(16U)
 #define SX_BLKCIPHER_AES_BLK_SZ (16U)
 
+#define SX_BLKCIPHER_CHACHA20_BLK_SZ (64U)
+
 #if defined(PSA_NEED_CRACEN_STREAM_CIPHER_CHACHA20)
 /* ChaCha20 has a 512 bit block size */
-#define SX_BLKCIPHER_MAX_BLK_SZ (64U)
+#define SX_BLKCIPHER_MAX_BLK_SZ SX_BLKCIPHER_CHACHA20_BLK_SZ
 #else
 #define SX_BLKCIPHER_MAX_BLK_SZ SX_BLKCIPHER_AES_BLK_SZ
 #endif
@@ -42,6 +44,12 @@
  * CHACHA20 (and for CHACHAPOLY for that sake).
  */
 #define CRACEN_MAX_CHACHA20_KEY_SIZE (32u)
+
+/* Defined by RFC8439 */
+#define CRACEN_POLY1305_TAG_SIZE (16u)
+#define CRACEN_POLY1305_KEY_SIZE (32u)
+/* BA417 uses 131 bit */
+#define CRACEN_POLY1305_ACC_SIZE (17u)
 
 /*
  * There are two key types supported for ciphers, CHACHA20 and AES,
@@ -225,6 +233,27 @@ struct cracen_sw_gcm_context_s {
 };
 typedef struct cracen_sw_gcm_context_s cracen_sw_gcm_context_t;
 
+struct cracen_sw_chacha20_poly1305_context_s {
+	
+	uint32_t ctr; /* Counter */
+	// uint8_t keystream[SX_BLKCIPHER_CHACHA20_BLK_SZ]; /* Generated keystream */
+	uint8_t poly_acc[CRACEN_POLY1305_ACC_SIZE]; /* Poly1305 calculation result (accumulator) */
+	uint8_t rs_key[CRACEN_POLY1305_KEY_SIZE]; /* Key (r, s) for Poly1305 */
+	// Note: the size of the following buffer depend on the operation:
+	//	 - 16 bytes for Poly1305;
+	//	 - 64 bytes for ChaCha20.
+	// Note 2: Check if "unprocessed_input" buffer of "cracen_aead_operation"
+	// can be used instead of this one to save RAM
+	uint8_t partial_block[SX_BLKCIPHER_CHACHA20_BLK_SZ]; /* Buffer for partial blocks */
+	// size_t keystream_offset; /* Position in keystream buffer */
+	size_t total_ad_fed; /* Total AD bytes processed */
+	size_t total_data_enc; /* Total size of the ciphertext */
+	size_t data_partial_len; /* Partial data block length */
+	bool ctr_initialized; /* CTR initialization flag */
+	bool rs_key_initialized; /* (r, s) key initialization flag */
+};
+typedef struct cracen_sw_chacha20_poly1305_context_s cracen_sw_chacha20_poly1305_context_t;
+
 struct cracen_aead_operation {
 	psa_algorithm_t alg;
 	struct sxkeyref keyref;
@@ -250,6 +279,10 @@ struct cracen_aead_operation {
 #if defined(PSA_NEED_CRACEN_GCM_AES)
 	cracen_sw_gcm_context_t sw_gcm_ctx;
 #endif /* PSA_NEED_CRACEN_GCM_AES */
+
+#if defined(PSA_NEED_CRACEN_CHACHA20_POLY1305)
+	cracen_sw_chacha20_poly1305_context_t sw_chacha_poly_ctx;
+#endif /* PSA_NEED_CRACEN_CHACHA20_POLY1305 */
 #endif /* PSA_NEED_CRACEN_MULTIPART_WORKAROUNDS */
 };
 typedef struct cracen_aead_operation cracen_aead_operation_t;
