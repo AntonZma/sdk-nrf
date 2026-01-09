@@ -47,6 +47,7 @@
 
 /* Defined by RFC8439 */
 #define CRACEN_POLY1305_TAG_SIZE (16u)
+#define CRACEN_POLY1305_SKEY_SIZE (16u)
 #define CRACEN_POLY1305_KEY_SIZE (32u)
 /* BA417 uses 131 bit */
 #define CRACEN_POLY1305_ACC_SIZE (17u)
@@ -234,11 +235,10 @@ struct cracen_sw_gcm_context_s {
 typedef struct cracen_sw_gcm_context_s cracen_sw_gcm_context_t;
 
 struct cracen_sw_chacha20_poly1305_context_s {
-	
 	uint32_t ctr; /* Counter */
 	// uint8_t keystream[SX_BLKCIPHER_CHACHA20_BLK_SZ]; /* Generated keystream */
 	uint8_t poly_acc[CRACEN_POLY1305_ACC_SIZE]; /* Poly1305 calculation result (accumulator) */
-	uint8_t rs_key[CRACEN_POLY1305_KEY_SIZE]; /* Key (r, s) for Poly1305 */
+	uint8_t s_key[CRACEN_POLY1305_KEY_SIZE]; /* Key (s) for Poly1305 */
 	// Note: the size of the following buffer depend on the operation:
 	//	 - 16 bytes for Poly1305;
 	//	 - 64 bytes for ChaCha20.

@@ -12,6 +12,10 @@
 // #include <sxsymcrypt/aes.h>
 #include <sxsymcrypt/internal.h>
 #include <sxsymcrypt/keyref.h>
+
+#include "blkcipherdefs.h"
+#include "cmdma.h"
+
 #include <cracen/statuscodes.h>
 #include <zephyr/sys/util.h>
 #include <zephyr/sys/__assert.h>
@@ -28,8 +32,133 @@
 #define POLY1305_CLAMP_ODD_MASK			0x0F
 #define POLY1305_CLAMP_EVEN_MASK		0xFC
 
-// /* Compute Q (length field size) from nonce length: Q = 16 - nonce_len */
-// #define GCM_Q_LEN_FROM_NONCE(nonce_len) (SX_BLKCIPHER_AES_BLK_SZ - (nonce_len))
+#define CRACEN_CHACHAPOLY_COUNTER_SIZE	4u
+#define CRACEN_CHACHAPOLY_NONCE_SIZE	12u
+
+#define BA417_MODE_POLY1305	(2)
+
+static int lenAlenC_nop(size_t aadsz, size_t datasz, uint8_t *out);
+
+static const struct sx_blkcipher_cmdma_tags ba417blkciphertags = {
+	.cfg = DMATAG_BA417 | DMATAG_CONFIG(0x00),
+	.key = DMATAG_BA417 | DMATAG_CONFIG(0x04),
+	.iv_or_state = DMATAG_BA417 | DMATAG_CONFIG(0x28),
+	.data = DMATAG_BA417,
+};
+
+static const struct sx_blkcipher_cmdma_cfg ba417poly1305cfg = {
+	// .decr = CM_CFG_DECRYPT << 2,
+	// .ctxsave = CHACHAPOLY_MODEID_CTX_SAVE,
+	// .ctxload = CHACHAPOLY_MODEID_CTX_LOAD,
+	.dmatags = &ba417blkciphertags,
+	.lenAlenC = lenAlenC_nop,
+	// .statesz = CHACHA20_CTX_STATE_SZ,
+	.mode = 0x01,
+	.inminsz = 1,
+	.granularity = 1,
+	.blocksz = SX_BLKCIPHER_CHACHA20_BLK_SZ,
+};
+
+static int lenAlenC_nop(size_t aadsz, size_t datasz, uint8_t *out)
+{
+	(void)aadsz;
+	(void)datasz;
+	(void)out;
+
+	return 0;
+}
+
+static int sx_aead_create_poly1305(struct sxaead *aead_ctx, struct sxkeyref *key,
+				   const uint8_t *nonce, size_t tagsz)
+{
+	if (key->sz != CRACEN_MAX_AEAD_KEY_SIZE) {
+		return SX_ERR_INVALID_KEY_SZ;
+	}
+
+	/* has countermeasures and the key need to be set before callling sx_aead_hw_reserve */
+	aead_ctx->has_countermeasures = false;
+	aead_ctx->key = key;
+	sx_aead_hw_reserve(aead_ctx);
+
+	aead_ctx->cfg = &ba417poly1305cfg;
+
+	sx_cmdma_newcmd(&aead_ctx->dma, aead_ctx->descs, BA417_MODE_POLY1305,
+			aead_ctx->cfg->dmatags->cfg);
+
+	ADD_CFGDESC(aead_ctx->dma, key->key, CRACEN_MAX_AEAD_KEY_SIZE,
+		    aead_ctx->cfg->dmatags->key);
+
+	/* In AEAD context, for BA417, the counter that must be provided and
+	 * initialized with 1. counter size is 4 bytes. Starting at position 16
+	 * due to lenAlenC that uses first 16 bytes of extramem
+	 */
+	aead_ctx->extramem[16] = 0;
+	aead_ctx->extramem[17] = 0;
+	aead_ctx->extramem[18] = 0;
+	aead_ctx->extramem[19] = 1;
+
+	ADD_INDESC_PRIV(aead_ctx->dma, OFFSET_EXTRAMEM(aead_ctx) + 16,
+			CRACEN_CHACHAPOLY_COUNTER_SIZE,
+			aead_ctx->cfg->dmatags->iv_or_state);
+
+	// Needed ?
+	ADD_CFGDESC(aead_ctx->dma, nonce, CRACEN_CHACHAPOLY_NONCE_SIZE,
+		    DMATAG_BA417 | DMATAG_CONFIG(0x2C));
+
+	aead_ctx->tagsz = tagsz;
+	// aead_ctx->expectedtag = aead_ctx->cfg->verifier;
+	// aead_ctx->discardaadsz = 0;
+	// aead_ctx->totalaadsz = 0;
+	// aead_ctx->datainsz = 0;
+	// aead_ctx->dataintotalsz = 0;
+
+	return SX_OK;
+}
+
+static psa_status_t cracen_poly1305_primitive(const struct sxkeyref *key, const uint8_t *nonce,
+					      const uint8_t *msg, size_t msg_sz, uint8_t *tag)
+{
+	int sx_status;
+	size_t output_size;
+	struct sxaead aead_ctx = {};
+
+	sx_status = sx_aead_create_poly1305(&aead_ctx, key, nonce, CRACEN_POLY1305_TAG_SIZE);
+	if (sx_status != SX_OK) {
+		return silex_statuscodes_to_psa(sx_status);
+	}
+
+	sx_status = sx_aead_feed_aad(&aead_ctx, msg, msg_sz);
+	if (sx_status != SX_OK) {
+		return silex_statuscodes_to_psa(sx_status);
+	}
+
+	sx_status = sx_aead_produce_tag(&aead_ctx, tag);
+	if (sx_status) {
+		return silex_statuscodes_to_psa(sx_status);
+	}
+
+	sx_status = sx_aead_wait(&aead_ctx);
+	safe_memzero(&aead_ctx, sizeof(aead_ctx));
+	return silex_statuscodes_to_psa(sx_status);
+}
+
+static psa_status_t cracen_chacha20_primitive(struct sxblkcipher *blkciph, const struct sxkeyref *key,
+				       const uint8_t *counter, const uint8_t *nonce,
+				       const uint8_t *input, uint8_t *output, size_t data_size)
+{
+	int sx_status;
+	size_t output_size;
+
+	sx_status = sx_blkcipher_create_chacha20_enc(blkciph, key, counter, nonce);
+	if (sx_status != SX_OK) {
+		return silex_statuscodes_to_psa(sx_status);
+	}
+
+	// TODO: check if the following function will work.
+	// If yes, it must be renamed inside "cracen_sw_common.c" so as not to
+	// specifically include block algorithm in its name.
+	return cracen_aes_ecb_crypt(blkciph, input, data_size, output, data_size, &output_size);
+}
 
 static bool is_nonce_length_valid(size_t nonce_length)
 {
@@ -51,106 +180,31 @@ static psa_status_t increment_counter(uint32_t *ctr)
 	return PSA_ERROR_INVALID_ARGUMENT;
 }
 
-static psa_status_t cracen_chacha20_primitive(struct sxblkcipher *blkciph, const struct sxkeyref *key,
-				       const uint8_t *counter, const uint8_t *nonce,
-				       const uint8_t *input, uint8_t *output, size_t data_size)
-{
-	int sx_status;
-	size_t output_size;
-
-	sx_status = sx_blkcipher_create_chacha20_enc(blkciph, key, counter, nonce);
-	if (sx_status != SX_OK) {
-		return silex_statuscodes_to_psa(sx_status);
-	}
-
-	// TODO: check if the following function will work.
-	// If yes, it must be renamed inside "cracen_sw_common.c" so as not to
-	// specifically include block algorithm in its name.
-	return cracen_aes_ecb_crypt(blkciph, input, data_size, output, data_size, &output_size);
-}
-
-/** a = a + b,
- *  assuming sz_a > sz_b
-*/
-static void cracen_be_addbytes(uint8_t *a, const uint8_t *b, size_t sz_a, size_t sz_b)
-{
-	size_t carry = 0;
-	size_t mask;
-	size_t next_byte;
-	size_t sum;
-
-	while (sz_a > 0) {
-		sz_a--;
-		/* mask: 0xFFFFFFFF if sz_b > 0, else 0 */
-		mask = 0;
-		mask -= (sz_b > 0);
-
-		/* load b byte or 0 */
-		next_byte = b[sz_b - 1] & mask;
-
-		sum = (size_t)a[sz_a] + next_byte + carry;
-		a[sz_a] = (uint8_t)(sum & 0xFF);
-		carry = sum >> 8;
-
-		sz_b -= (sz_b > 0);
-	}
-}
-
-/* Modified function from Silex (needed to test the ability to switch counter value during initialization) */
-// static int create_chacha20poly1305(struct sxaead *aead_ctx, const struct sxkeyref *key,
-// 				   uint32_t counter,
-// 				   const uint8_t *nonce, const uint32_t dir, size_t tagsz)
+// /** a = a + b,
+//  *  assuming sz_a > sz_b
+// */
+// static void cracen_be_addbytes(uint8_t *a, const uint8_t *b, size_t sz_a, size_t sz_b)
 // {
-// 	if (key->sz != SX_CHACHAPOLY_KEY_SZ) {
-// 		return SX_ERR_INVALID_KEY_SZ;
+// 	size_t carry = 0;
+// 	size_t mask;
+// 	size_t next_byte;
+// 	size_t sum;
+
+// 	while (sz_a > 0) {
+// 		sz_a--;
+// 		/* mask: 0xFFFFFFFF if sz_b > 0, else 0 */
+// 		mask = 0;
+// 		mask -= (sz_b > 0);
+
+// 		/* load b byte or 0 */
+// 		next_byte = b[sz_b - 1] & mask;
+
+// 		sum = (size_t)a[sz_a] + next_byte + carry;
+// 		a[sz_a] = (uint8_t)(sum & 0xFF);
+// 		carry = sum >> 8;
+
+// 		sz_b -= (sz_b > 0);
 // 	}
-
-// 	/* has countermeasures and the key need to be set before callling sx_aead_hw_reserve */
-// 	aead_ctx->has_countermeasures = false;
-// 	aead_ctx->key = key;
-// 	sx_aead_hw_reserve(aead_ctx);
-
-// 	aead_ctx->cfg = &ba417chachapolycfg;
-
-// 	sx_cmdma_newcmd(&aead_ctx->dma, aead_ctx->descs, aead_ctx->cfg->mode | dir,
-// 			aead_ctx->cfg->dmatags->cfg);
-// 	ADD_CFGDESC(aead_ctx->dma, key->key, SX_CHACHAPOLY_KEY_SZ, aead_ctx->cfg->dmatags->key);
-
-// 	/* In AEAD context, for BA417, the counter that must be provided and
-// 	 * initialized with 1. counter size is 4 bytes. Starting at position 16
-// 	 * due to lenAlenC that uses first 16 bytes of extramem
-// 	 */
-// 	// aead_ctx->extramem[16] = 0;
-// 	// aead_ctx->extramem[17] = 0;
-// 	// aead_ctx->extramem[18] = 0;
-// 	// aead_ctx->extramem[19] = 1;
-// 	memcpy(&aead_ctx->extramem[16], (uint8_t *)counter, sizeof(uint32_t));
-
-// 	ADD_INDESC_PRIV(aead_ctx->dma, OFFSET_EXTRAMEM(aead_ctx) + 16, SX_CHACHAPOLY_COUNTER_SIZE,
-// 			aead_ctx->cfg->dmatags->iv_or_state);
-// 	ADD_CFGDESC(aead_ctx->dma, nonce, SX_CHACHAPOLY_NONCE_SZ, aead_ctx->cfg->dmatags->nonce);
-
-// 	aead_ctx->tagsz = tagsz;
-// 	aead_ctx->expectedtag = aead_ctx->cfg->verifier;
-// 	aead_ctx->discardaadsz = 0;
-// 	aead_ctx->totalaadsz = 0;
-// 	aead_ctx->datainsz = 0;
-// 	aead_ctx->dataintotalsz = 0;
-
-// 	return SX_OK;
-// }
-
-// int create_chacha20poly1305_enc(struct sxaead *aead_ctx, const struct sxkeyref *key, uint32_t counter,
-// 					const uint8_t *nonce, size_t tagsz)
-// {
-// 	return create_chacha20poly1305(aead_ctx, key, counter, nonce, 0, tagsz);
-// }
-
-// int create_chacha20poly1305_dec(struct sxaead *aead_ctx, const struct sxkeyref *key, uint32_t counter,
-// 					const uint8_t *nonce, size_t tagsz)
-// {
-// 	return create_chacha20poly1305(aead_ctx, key, counter, nonce, ba417chachapolycfg.decr,
-// 					       tagsz);
 // }
 
 // + for ChaCha
@@ -181,7 +235,8 @@ static psa_status_t setup(cracen_aead_operation_t *operation, enum cipher_operat
 	return status;
 }
 
-static void poly_generate_rs_key(const uint8_t *chacha20_res_block, uint8_t *rs_key)
+// This function required in spite of HW usage
+static void poly_generate_s_key(const uint8_t *chacha20_res_block, uint8_t *s_key)
 {
 	/** RFC8439:
 	 *  We take the first 256 bits of the serialized state,
@@ -190,16 +245,16 @@ static void poly_generate_rs_key(const uint8_t *chacha20_res_block, uint8_t *rs_
 	 *  the next 128 bits become "s". 
 	 *  The other 256 bits are discarded.
 	 */
-	const size_t r_value_size = CRACEN_POLY1305_KEY_SIZE / 2;
+	// const size_t r_value_size = CRACEN_POLY1305_KEY_SIZE / 2;
 
-	memcpy(rs_key, chacha20_res_block, CRACEN_POLY1305_KEY_SIZE);
-	/* Clamping "r" value */
-	for (size_t i = 3; i < r_value_size; i++) {
-		chacha20_res_block[i] &= POLY1305_CLAMP_ODD_MASK;
-		if (i + 1 < r_value_size) {
-			chacha20_res_block[i + 1] &= POLY1305_CLAMP_EVEN_MASK;
-		}
-	}
+	memcpy(s_key, chacha20_res_block, CRACEN_POLY1305_SKEY_SIZE);
+	// /* Clamping "r" value */
+	// for (size_t i = 3; i < r_value_size; i++) {
+	// 	chacha20_res_block[i] &= POLY1305_CLAMP_ODD_MASK;
+	// 	if (i + 1 < r_value_size) {
+	// 		chacha20_res_block[i + 1] &= POLY1305_CLAMP_EVEN_MASK;
+	// 	}
+	// }
 }
 
 // + for ChaCha
@@ -221,40 +276,58 @@ static psa_status_t initialize_poly_key(cracen_aead_operation_t *operation,
 			SX_BLKCIPHER_CHACHA20_BLK_SZ);
 
 	if (status == PSA_SUCCESS) {
-		poly_generate_rs_key(res_block, chacha_poly_ctx->rs_key);
+		poly_generate_s_key(res_block, chacha_poly_ctx->s_key);
 		gcm_ctx->rs_key_initialized = true;
 	}
 	return status;
 }
 
 // TODO
-static void calc_poly1305_mac(cracen_aead_operation_t *operation, const uint8_t *input,
-			   size_t input_len)
+static psa_status_t calc_poly1305_mac(cracen_aead_operation_t *operation, const uint8_t *input,
+			   size_t input_len, bool last_chunk)
 {
 	cracen_sw_chacha20_poly1305_context_t *chacha_poly_ctx = &operation->sw_chacha_poly_ctx;
+	psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
+	uint8_t tag[CRACEN_POLY1305_TAG_SIZE] = {};
 
 	for (size_t i = 0; i < input_len; i++) {
 		chacha_poly_ctx->partial_block[gcm_ctx->data_partial_len++] = input[i];
 		if (chacha_poly_ctx->data_partial_len == CRACEN_POLY1305_TAG_SIZE) {
-			/** The size of the input data chunk of GHASH algorithm
-			 * is expected to be multiple of block size (NIST SP800-38D)
-			 */
-			// cracen_xorbytes(gcm_ctx->ghash_block, gcm_ctx->partial_block,
-			// 		SX_BLKCIPHER_AES_BLK_SZ);
-			// multiply_blocks_gf(operation, gcm_ctx->ghash_block, gcm_ctx->ghash_block);
-
-			// Note: for the "partial" case second parameter should be "data_partial_len"
-			// cracen_be_add(chacha_poly_ctx->partial_block, CRACEN_POLY1305_TAG_SIZE, 0x01); // NOTE: This must be added as the 17th byte
-			cracen_be_addbytes(chacha_poly_ctx->poly_acc, chacha_poly_ctx->partial_block,
-					CRACEN_POLY1305_ACC_SIZE, CRACEN_POLY1305_TAG_SIZE);
+			// // Note: for the "partial" case second parameter should be "data_partial_len"
+			// // cracen_be_add(chacha_poly_ctx->partial_block, CRACEN_POLY1305_TAG_SIZE, 0x01); // NOTE: This must be added as the 17th byte
+			// cracen_be_addbytes(chacha_poly_ctx->poly_acc, chacha_poly_ctx->partial_block,
+			// 		CRACEN_POLY1305_ACC_SIZE, CRACEN_POLY1305_TAG_SIZE);
 			
-			// TODO: add modulo operation from CRACEN primitive
-			/* a = (r * a) % p */
-			// chacha_poly_ctx->poly_acc = ...;
+			// // TODO: add modulo operation from CRACEN primitive
+			// /* a = (r * a) % p */
+			// // chacha_poly_ctx->poly_acc = ...;
+
+			// Make use of HW Poly1305 primitive here
+			// NOTE: With the current approach ONLY FIRST iteration should work.
+			//       For all subsequent operations we must modify "partial_block" !!
+			status = cracen_poly1305_primitive(&operation->keyref, operation->nonce,
+							   chacha_poly_ctx->partial_block,
+							   CRACEN_POLY1305_TAG_SIZE,
+							   tag);
+			if (status != PSA_SUCCESS) {
+				return status;
+			}
+
+			if (!last_chunk) {
+				// NOTE: This function might be changed to be Little Endian (static func)
+
+				/** Poly1305 algorithm is expected to add this value each time,
+				 *  so we substract this value here
+				 */
+				cracen_be_sub(chacha_poly_ctx->poly_acc, tag,
+					      chacha_poly_ctx->s_key, CRACEN_POLY1305_SKEY_SIZE);
+			}
 
 			chacha_poly_ctx->data_partial_len = 0;
 		}
 	}
+
+	return PSA_SUCCESS;
 }
 
 static psa_status_t calc_chacha20(cracen_aead_operation_t *operation, struct sxblkcipher *cipher,
