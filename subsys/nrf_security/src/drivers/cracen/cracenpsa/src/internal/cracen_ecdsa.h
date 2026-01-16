@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#ifndef CRACEN_PSA_ECDSA_H
-#define CRACEN_PSA_ECDSA_H
+#ifndef CRACEN_ECDSA_H
+#define CRACEN_ECDSA_H
 
 #include <psa/crypto.h>
 #include <stdint.h>
@@ -36,4 +36,4 @@ int cracen_ecdsa_sign_digest_deterministic(const struct cracen_ecc_priv_key *pri
 					   const struct sx_pk_ecurve *curve, const uint8_t *digest,
 					   size_t digestsz, uint8_t *signature);
 
-#endif /* CRACEN_PSA_ECDSA_H */
+#endif /* CRACEN_ECDSA_H */

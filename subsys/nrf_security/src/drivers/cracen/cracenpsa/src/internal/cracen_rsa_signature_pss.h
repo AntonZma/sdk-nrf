@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#ifndef CRACEN_PSA_RSA_SIGNATURE_PSS_H
-#define CRACEN_PSA_RSA_SIGNATURE_PSS_H
+#ifndef CRACEN_RSA_SIGNATURE_PSS_H
+#define CRACEN_RSA_SIGNATURE_PSS_H
 
 #include <cracen_psa_primitives.h>
 
@@ -27,4 +27,4 @@ int cracen_rsa_pss_verify_digest(struct cracen_rsa_key *rsa_key,
 				 const struct sxhashalg *hashalg, const uint8_t *digest,
 				 size_t digest_length, size_t saltsz);
 
-#endif /* CRACEN_PSA_RSA_SIGNATURE_PSS_H */
+#endif /* CRACEN_RSA_SIGNATURE_PSS_H */

@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#ifndef CRACEN_PSA_EDDSA_H
-#define CRACEN_PSA_EDDSA_H
+#ifndef CRACEN_EDDSA_H
+#define CRACEN_EDDSA_H
 
 #include <stddef.h>
 #include <stdbool.h>
@@ -39,4 +39,4 @@ int cracen_ed448ph_verify(const uint8_t *pub_key, const uint8_t *message, size_t
 
 int cracen_ed448_create_pubkey(const uint8_t *priv_key, uint8_t *pub_key);
 
-#endif /* CRACEN_PSA_EDDSA_H */
+#endif /* CRACEN_EDDSA_H */

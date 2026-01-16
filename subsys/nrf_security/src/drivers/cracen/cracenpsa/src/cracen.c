@@ -13,7 +13,7 @@
 #include <cracen/lib_kmu.h>
 #include <cracen/statuscodes.h>
 
-#include "common.h"
+#include "internal/common.h"
 #include "microcode_binary.h"
 #include <nrf_security_mutexes.h>
 #include <sxsymcrypt/trng.h>

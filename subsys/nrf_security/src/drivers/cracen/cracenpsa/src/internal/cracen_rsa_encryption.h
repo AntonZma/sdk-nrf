@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#ifndef CRACEN_PSA_RSA_ENCRYPTION_H
-#define CRACEN_PSA_RSA_ENCRYPTION_H
+#ifndef CRACEN_RSA_ENCRYPTION_H
+#define CRACEN_RSA_ENCRYPTION_H
 
 #include "cracen_psa_primitives.h"
 
@@ -23,4 +23,4 @@ int cracen_rsa_pkcs1v15_decrypt(struct cracen_rsa_key *rsa_key, struct cracen_cr
 int cracen_rsa_pkcs1v15_encrypt(struct cracen_rsa_key *rsa_key, struct cracen_crypt_text *text,
 				uint8_t *output, size_t *output_length);
 
-#endif /* CRACEN_PSA_RSA_ENCRYPTION_H */
+#endif /* CRACEN_RSA_ENCRYPTION_H */
