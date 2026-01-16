@@ -22,6 +22,13 @@
  * See "PSA Cryptography API" for documentation.
  */
 
+psa_status_t cracen_get_opaque_size(const psa_key_attributes_t *attributes, size_t *key_size);
+
+psa_status_t cracen_init_random(cracen_prng_context_t *context);
+psa_status_t cracen_get_random(cracen_prng_context_t *context, uint8_t *output, size_t output_size);
+psa_status_t cracen_free_random(cracen_prng_context_t *context);
+psa_status_t cracen_get_trng(uint8_t *output, size_t output_size);
+
 psa_status_t cracen_sign_message(const psa_key_attributes_t *attributes, const uint8_t *key_buffer,
 				 size_t key_buffer_size, psa_algorithm_t alg, const uint8_t *input,
 				 size_t input_length, uint8_t *signature, size_t signature_size,
@@ -73,20 +80,6 @@ static inline psa_status_t cracen_hash_abort(cracen_hash_operation_t *operation)
 	return PSA_SUCCESS;
 }
 
-psa_status_t cracen_aead_encrypt(const psa_key_attributes_t *attributes, const uint8_t *key_buffer,
-				 size_t key_buffer_size, psa_algorithm_t alg, const uint8_t *nonce,
-				 size_t nonce_length, const uint8_t *additional_data,
-				 size_t additional_data_length, const uint8_t *plaintext,
-				 size_t plaintext_length, uint8_t *ciphertext,
-				 size_t ciphertext_size, size_t *ciphertext_length);
-
-psa_status_t cracen_aead_decrypt(const psa_key_attributes_t *attributes, const uint8_t *key_buffer,
-				 size_t key_buffer_size, psa_algorithm_t alg, const uint8_t *nonce,
-				 size_t nonce_length, const uint8_t *additional_data,
-				 size_t additional_data_length, const uint8_t *ciphertext,
-				 size_t ciphertext_length, uint8_t *plaintext,
-				 size_t plaintext_size, size_t *plaintext_length);
-
 psa_status_t cracen_cipher_encrypt(const psa_key_attributes_t *attributes,
 				   const uint8_t *key_buffer, size_t key_buffer_size,
 				   psa_algorithm_t alg, const uint8_t *iv, size_t iv_length,
@@ -119,6 +112,20 @@ psa_status_t cracen_cipher_finish(cracen_cipher_operation_t *operation, uint8_t 
 				  size_t output_size, size_t *output_length);
 
 psa_status_t cracen_cipher_abort(cracen_cipher_operation_t *operation);
+
+psa_status_t cracen_aead_encrypt(const psa_key_attributes_t *attributes, const uint8_t *key_buffer,
+				 size_t key_buffer_size, psa_algorithm_t alg, const uint8_t *nonce,
+				 size_t nonce_length, const uint8_t *additional_data,
+				 size_t additional_data_length, const uint8_t *plaintext,
+				 size_t plaintext_length, uint8_t *ciphertext,
+				 size_t ciphertext_size, size_t *ciphertext_length);
+
+psa_status_t cracen_aead_decrypt(const psa_key_attributes_t *attributes, const uint8_t *key_buffer,
+				 size_t key_buffer_size, psa_algorithm_t alg, const uint8_t *nonce,
+				 size_t nonce_length, const uint8_t *additional_data,
+				 size_t additional_data_length, const uint8_t *ciphertext,
+				 size_t ciphertext_length, uint8_t *plaintext,
+				 size_t plaintext_size, size_t *plaintext_length);
 
 psa_status_t cracen_aead_encrypt_setup(cracen_aead_operation_t *operation,
 				       const psa_key_attributes_t *attributes,
@@ -207,17 +214,6 @@ psa_status_t cracen_key_derivation_output_bytes(cracen_key_derivation_operation_
 
 psa_status_t cracen_key_derivation_abort(cracen_key_derivation_operation_t *operation);
 
-psa_status_t cracen_export_public_key(const psa_key_attributes_t *attributes,
-				      const uint8_t *key_buffer, size_t key_buffer_size,
-				      uint8_t *data, size_t data_size, size_t *data_length);
-
-psa_status_t cracen_import_key(const psa_key_attributes_t *attributes, const uint8_t *data,
-			       size_t data_length, uint8_t *key_buffer, size_t key_buffer_size,
-			       size_t *key_buffer_length, size_t *key_bits);
-
-psa_status_t cracen_generate_key(const psa_key_attributes_t *attributes, uint8_t *key_buffer,
-				 size_t key_buffer_size, size_t *key_buffer_length);
-
 psa_status_t cracen_asymmetric_encrypt(const psa_key_attributes_t *attributes,
 				       const uint8_t *key_buffer, size_t key_buffer_size,
 				       psa_algorithm_t alg, const uint8_t *input,
@@ -229,6 +225,17 @@ psa_status_t cracen_asymmetric_decrypt(const psa_key_attributes_t *attributes,
 				       psa_algorithm_t alg, const uint8_t *input,
 				       size_t input_length, const uint8_t *salt, size_t salt_length,
 				       uint8_t *output, size_t output_size, size_t *output_length);
+
+psa_status_t cracen_export_public_key(const psa_key_attributes_t *attributes,
+				      const uint8_t *key_buffer, size_t key_buffer_size,
+				      uint8_t *data, size_t data_size, size_t *data_length);
+
+psa_status_t cracen_import_key(const psa_key_attributes_t *attributes, const uint8_t *data,
+			       size_t data_length, uint8_t *key_buffer, size_t key_buffer_size,
+			       size_t *key_buffer_length, size_t *key_bits);
+
+psa_status_t cracen_generate_key(const psa_key_attributes_t *attributes, uint8_t *key_buffer,
+				 size_t key_buffer_size, size_t *key_buffer_length);
 
 psa_status_t cracen_get_builtin_key(psa_drv_slot_number_t slot_number,
 				    psa_key_attributes_t *attributes, uint8_t *key_buffer,
@@ -244,7 +251,12 @@ psa_status_t cracen_copy_key(psa_key_attributes_t *attributes, const uint8_t *so
 
 psa_status_t cracen_destroy_key(const psa_key_attributes_t *attributes);
 
-psa_status_t cracen_get_opaque_size(const psa_key_attributes_t *attributes, size_t *key_size);
+psa_status_t cracen_derive_key(const psa_key_attributes_t *attributes, const uint8_t *input,
+			       size_t input_length, uint8_t *key, size_t key_size,
+			       size_t *key_length);
+
+psa_status_t cracen_get_key_slot(mbedtls_svc_key_id_t key_id, psa_key_lifetime_t *lifetime,
+				 psa_drv_slot_number_t *slot_number);
 
 psa_status_t cracen_jpake_setup(cracen_jpake_operation_t *operation,
 				const psa_key_attributes_t *attributes, const uint8_t *password,
@@ -274,10 +286,6 @@ psa_status_t cracen_jpake_get_shared_key(cracen_jpake_operation_t *operation,
 					 size_t output_size, size_t *output_length);
 
 psa_status_t cracen_jpake_abort(cracen_jpake_operation_t *operation);
-
-psa_status_t cracen_init_random(cracen_prng_context_t *context);
-psa_status_t cracen_get_random(cracen_prng_context_t *context, uint8_t *output, size_t output_size);
-psa_status_t cracen_free_random(cracen_prng_context_t *context);
 
 psa_status_t cracen_srp_setup(cracen_srp_operation_t *operation,
 			      const psa_key_attributes_t *attributes, const uint8_t *password,
@@ -357,14 +365,5 @@ psa_status_t cracen_spake2p_get_shared_key(cracen_spake2p_operation_t *operation
 					   size_t output_size, size_t *output_length);
 
 psa_status_t cracen_spake2p_abort(cracen_spake2p_operation_t *operation);
-
-psa_status_t cracen_derive_key(const psa_key_attributes_t *attributes, const uint8_t *input,
-			       size_t input_length, uint8_t *key, size_t key_size,
-			       size_t *key_length);
-
-psa_status_t cracen_get_trng(uint8_t *output, size_t output_size);
-
-psa_status_t cracen_get_key_slot(mbedtls_svc_key_id_t key_id, psa_key_lifetime_t *lifetime,
-				 psa_drv_slot_number_t *slot_number);
 
 #endif /* CRACEN_PSA_H */
