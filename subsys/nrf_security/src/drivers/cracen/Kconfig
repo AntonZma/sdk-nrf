@@ -136,9 +136,12 @@ config CRACEN_USE_INTERRUPTS
 	  If this is turned off CRACEN uses active polling instead,
 	  which may have an impact on performance.
 
-config CRACEN_ENABLE_ECC_EXTENDED_COUNTERMEASURES
+config CRACEN_LITE_ENABLE_ECC_COUNTERMEASURES
 	def_bool CRACEN_HW_VERSION_LITE
 	depends on CRACEN_ENABLE_ECC_COUNTERMEASURES
+	help
+	  Enable Cracen ECC countermeasures supported by nRF54LM20X, nRF54LV10A
+	  and nRF7120 only.
 
 config CRACEN_ENABLE_ECC_COUNTERMEASURES
 	bool "CRACEN ECC countermeasures"
@@ -158,9 +161,12 @@ config CRACEN_ENABLE_ECC_COUNTERMEASURES
 	  - EdDSA base point multiplication
 	  - Edwards point multiplication
 
-config CRACEN_ENABLE_RSA_EXTENDED_COUNTERMEASURES
+config CRACEN_BASE_ENABLE_RSA_COUNTERMEASURES
 	def_bool CRACEN_HW_VERSION_BASE
 	depends on CRACEN_ENABLE_RSA_COUNTERMEASURES
+	help
+	  Enable Cracen RSA countermeasures supported by nRF54H20, nRF54L05,
+	  nRF54L10 and nRF54L15 only.
 
 config CRACEN_ENABLE_RSA_COUNTERMEASURES
 	bool "CRACEN RSA countermeasures"
