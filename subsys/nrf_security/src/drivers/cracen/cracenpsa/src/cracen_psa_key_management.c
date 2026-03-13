@@ -146,7 +146,7 @@ psa_status_t cracen_import_key(const psa_key_attributes_t *attributes, const uin
 	psa_key_location_t location =
 		PSA_KEY_LIFETIME_GET_LOCATION(psa_get_key_lifetime(attributes));
 
-	if (IS_ENABLED(PSA_NEED_CRACEN_KMU_DRIVER) &&
+	if (IS_ENABLED(PSA_NEED_CRACEN_KMU_DRIVER_KEY_IMPORT) &&
 	    location == PSA_KEY_LOCATION_CRACEN_KMU) {
 		return import_key_for_kmu(attributes, data, data_length, key_buffer,
 					  key_buffer_size, key_buffer_length, key_bits);
