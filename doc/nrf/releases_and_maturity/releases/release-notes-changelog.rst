@@ -121,6 +121,7 @@ Security
 
   * How the :kconfig:option:`CONFIG_NRF_SECURITY` and :kconfig:option:`CONFIG_PSA_CRYPTO` interact with each other.
     :kconfig:option:`CONFIG_NRF_SECURITY` is now promptless and auto-enabled indirectly by :kconfig:option:`CONFIG_PSA_CRYPTO`.
+  * Approach to store keys in the KMU so that AEAD algorithms with non-default (shortened) tag lengths are supported.
 
 * Removed:
 
