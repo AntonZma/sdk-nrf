@@ -129,7 +129,7 @@ manifest:
           compare-by-default: true
     - name: mcuboot
       repo-path: sdk-mcuboot
-      revision: 69c7ba763a237c99f069bd24f2a2374f25103a85
+      revision: pull/627/head
       path: bootloader/mcuboot
     - name: qcbor
       repo-path: sdk-qcbor
@@ -162,7 +162,7 @@ manifest:
     - name: matter
       repo-path: sdk-connectedhomeip
       path: modules/lib/matter
-      revision: 494ce1882ddfeb64cf23a462c1265f95aba93ed4
+      revision: pull/711/head
       west-commands: scripts/west/west-commands.yml
       submodules:
         - name: nlio
@@ -202,7 +202,7 @@ manifest:
           compare-by-default: false
     - name: find-my
       repo-path: sdk-find-my
-      revision: 85f9b6b0ae1d4ebe7036187211269bb13da70198
+      revision: pull/394/head
       groups:
         - find-my
     - name: azure-sdk-for-c
