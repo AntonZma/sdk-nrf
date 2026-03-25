@@ -65,7 +65,7 @@ manifest:
     # https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/zephyr/guides/modules.html
     - name: zephyr
       repo-path: sdk-zephyr
-      revision: e3f35586ea5f4ced17f2388041eb7f277c9a166c
+      revision: pull/3905/head
       import:
         # In addition to the zephyr repository itself, NCS also
         # imports the contents of zephyr/west.yml at the above
@@ -128,7 +128,7 @@ manifest:
           compare-by-default: true
     - name: mcuboot
       repo-path: sdk-mcuboot
-      revision: 0537714e5dd2aee9f81d3ac842d570e36aaa2f11
+      revision: pull/627/head
       path: bootloader/mcuboot
     - name: qcbor
       url: https://github.com/laurencelundblade/QCBOR
@@ -149,7 +149,7 @@ manifest:
     - name: trusted-firmware-m
       repo-path: sdk-trusted-firmware-m
       path: modules/tee/tf-m/trusted-firmware-m
-      revision: 6aafa7b04a2b70bef2543d4d4f19b6b23ee0ae48
+      revision: pull/242/head
     - name: psa-arch-tests
       repo-path: sdk-psa-arch-tests
       path: modules/tee/tf-m/psa-arch-tests
@@ -157,7 +157,7 @@ manifest:
     - name: matter
       repo-path: sdk-connectedhomeip
       path: modules/lib/matter
-      revision: 08c13b87ff463a2056cd27c1c36c2977f5d03aee
+      revision: pull/711/head
       west-commands: scripts/west/west-commands.yml
       submodules:
         - name: nlio
@@ -197,7 +197,7 @@ manifest:
           compare-by-default: false
     - name: find-my
       repo-path: sdk-find-my
-      revision: a0cfa02a3fbe7990a59f55866949643e0185591d
+      revision: pull/394/head
       groups:
         - find-my
     - name: azure-sdk-for-c
