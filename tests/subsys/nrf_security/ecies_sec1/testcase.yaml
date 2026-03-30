@@ -1,0 +1,14 @@
+tests:
+  ecies_sec1.cracen:
+    sysbuild: true
+    tags:
+      - psa
+      - sysbuild
+      - ci_crypto
+      - ci_tests_crypto
+    platform_allow:
+      - nrf54l15dk/nrf54l15/cpuapp
+    integration_platforms:
+      - nrf54l15dk/nrf54l15/cpuapp
+#    extra_args:
+#      - EXTRA_CONF_FILE=overlays/cracen.conf
