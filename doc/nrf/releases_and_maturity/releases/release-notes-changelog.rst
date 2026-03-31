@@ -113,6 +113,9 @@ Developing with custom boards
 Security
 ========
 
+* Added:
+
+  * Support for the X25519 key pair storage in the :ref:`Key Management Unit (KMU) <ug_kmu_guides_supported_key_types>`.
 
 * Updated:
 
@@ -124,11 +127,6 @@ Security
   * The following Kconfig options:
 
     * ``CONFIG_NRF_SECURITY_ADVANCED``
-
-Mbed TLS
---------
-
-|no_changes_yet_note|
 
 Trusted Firmware-M (TF-M)
 -------------------------
