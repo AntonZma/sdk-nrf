@@ -56,7 +56,7 @@ psa_status_t cracen_ikg_get_builtin_key(psa_drv_slot_number_t slot_number,
 	case CRACEN_BUILTIN_MKEK_ID:
 	case CRACEN_BUILTIN_MEXT_ID:
 		psa_set_key_type(attributes, PSA_KEY_TYPE_AES);
-		psa_set_key_algorithm(attributes, PSA_ALG_SP800_108_COUNTER_CMAC);
+		psa_set_key_algorithm(attributes, /*PSA_ALG_SP800_108_COUNTER_CMAC*/ PSA_ALG_ECB_NO_PADDING);
 		break;
 
 	default:

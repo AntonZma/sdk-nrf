@@ -907,6 +907,7 @@ psa_status_t psa_driver_wrapper_cipher_encrypt(const psa_key_attributes_t *attri
 	case PSA_KEY_LOCATION_CRACEN_KMU:
 #endif
 #if defined(PSA_NEED_CRACEN_CIPHER_DRIVER)
+	case PSA_KEY_LOCATION_CRACEN:
 		status = cracen_cipher_encrypt(attributes, key_buffer, key_buffer_size, alg, iv,
 					       iv_length, input, input_length, output, output_size,
 					       output_length);

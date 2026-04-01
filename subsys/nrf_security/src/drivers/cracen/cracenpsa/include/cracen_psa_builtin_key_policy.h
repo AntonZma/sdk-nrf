@@ -76,7 +76,7 @@ static inline psa_key_usage_t cracen_ikg_key_user_get_usage(const psa_key_attrib
 	return (key_id == CRACEN_BUILTIN_IDENTITY_KEY_ID)
 		? (PSA_KEY_USAGE_SIGN_MESSAGE | PSA_KEY_USAGE_SIGN_HASH |
 		   PSA_KEY_USAGE_VERIFY_MESSAGE | PSA_KEY_USAGE_VERIFY_HASH)
-		: (PSA_KEY_USAGE_DERIVE | PSA_KEY_USAGE_VERIFY_DERIVATION);
+		: (PSA_KEY_USAGE_DERIVE | PSA_KEY_USAGE_VERIFY_DERIVATION | PSA_KEY_USAGE_ENCRYPT | PSA_KEY_USAGE_DECRYPT);
 }
 
 static inline bool cracen_kmu_key_user_allowed(const psa_key_attributes_t *attributes)
