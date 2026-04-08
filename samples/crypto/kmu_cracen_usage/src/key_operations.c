@@ -105,11 +105,13 @@ int key_operations_use_aes_key(psa_key_id_t *key_id)
 		return PSA_ERROR_INVALID_ARGUMENT;
 	}
 
+	psa_algorithm_t alg = /*PSA_ALG_CTR*/ PSA_ALG_ECB_NO_PADDING;
+
 	uint8_t encrypted_text[PSA_CIPHER_ENCRYPT_OUTPUT_SIZE(
-		PSA_KEY_TYPE_AES, PSA_ALG_CTR, NRF_CRYPTO_EXAMPLE_KMU_USAGE_KEY_MAX_TEXT_SIZE)];
+		PSA_KEY_TYPE_AES, alg, NRF_CRYPTO_EXAMPLE_KMU_USAGE_KEY_MAX_TEXT_SIZE)];
 	uint8_t decrypted_text[NRF_CRYPTO_EXAMPLE_KMU_USAGE_KEY_MAX_TEXT_SIZE];
 
-	status = psa_cipher_encrypt(*key_id, PSA_ALG_CTR, m_plain_text, sizeof(m_plain_text),
+	status = psa_cipher_encrypt(*key_id, alg, m_plain_text, sizeof(m_plain_text),
 				    encrypted_text, sizeof(encrypted_text), &olen);
 	if (status != PSA_SUCCESS) {
 		LOG_INF("psa_cipher_encrypt failed! (Error: %d)", status);
@@ -120,7 +122,7 @@ int key_operations_use_aes_key(psa_key_id_t *key_id)
 	PRINT_HEX("Plaintext", m_plain_text, sizeof(m_plain_text));
 	PRINT_HEX("Encrypted text", encrypted_text, sizeof(encrypted_text));
 
-	status = psa_cipher_decrypt(*key_id, PSA_ALG_CTR, encrypted_text, sizeof(encrypted_text),
+	status = psa_cipher_decrypt(*key_id, alg, encrypted_text, sizeof(encrypted_text),
 				    decrypted_text, sizeof(decrypted_text), &olen);
 	if (status != PSA_SUCCESS) {
 		LOG_INF("psa_cipher_decrypt failed! (Error: %d)", status);

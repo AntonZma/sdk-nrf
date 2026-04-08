@@ -10,7 +10,9 @@
 #ifndef __MAIN_H_
 #define __MAIN_H_
 
-#define NRF_CRYPTO_EXAMPLE_KMU_USAGE_KEY_MAX_TEXT_SIZE (100)
+// #define NRF_CRYPTO_EXAMPLE_DEMO_ECDSA
+
+#define NRF_CRYPTO_EXAMPLE_KMU_USAGE_KEY_MAX_TEXT_SIZE (96)
 
 /**
  * @brief Callback function called to generate specific key.

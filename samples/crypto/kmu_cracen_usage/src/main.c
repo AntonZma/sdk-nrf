@@ -12,6 +12,7 @@
 #include <psa/crypto_extra.h>
 
 #include <cracen_psa_kmu.h>
+#include <cracen_psa_key_ids.h>
 
 #ifdef CONFIG_BUILD_WITH_TFM
 #include <tfm_ns_interface.h>
@@ -19,6 +20,7 @@
 
 #include "main.h"
 #include "key_operations.h"
+#include "ikg_keygen.h"
 
 #define APP_SUCCESS	    (0)
 #define APP_ERROR	    (-1)
@@ -30,54 +32,63 @@ LOG_MODULE_REGISTER(kmu_cracen_usage, LOG_LEVEL_DBG);
 /* ====================================================================== */
 /*       Global variables/defines for the KMU Cracen usage example        */
 
-#define SAMPLE_MAX_KEY_COUNT (4)
+#define SAMPLE_MAX_KEY_COUNT (1)
 
 static sample_key_entry_t m_sample_keys[SAMPLE_MAX_KEY_COUNT] = {
 	/* Pre-provisioned keys.
 	 * These keys remain in the KMU between MCU resets.
 	 */
+#if !defined(NRF_CRYPTO_EXAMPLE_DEMO_ECDSA)
 	{
 		/* The key requires 1 KMU slot */
-		.key_id = PSA_KEY_HANDLE_FROM_CRACEN_KMU_SLOT(CRACEN_KMU_KEY_USAGE_SCHEME_PROTECTED,
-						       PSA_KEY_ID_USER_MIN),
+		.key_id = CRACEN_BUILTIN_MKEK_ID,
 		.supported_operations = {
 			.gen_key_cb = NULL,
 			.use_key_cb = key_operations_use_aes_key,
 		}
 	},
+#else
 	{
-		/* The key requires 2 KMU slots */
-		.key_id = PSA_KEY_HANDLE_FROM_CRACEN_KMU_SLOT(CRACEN_KMU_KEY_USAGE_SCHEME_RAW,
-						       PSA_KEY_ID_USER_MIN + 1),
+		.key_id = CRACEN_BUILTIN_IDENTITY_KEY_ID,
 		.supported_operations = {
 			.gen_key_cb = NULL,
-			.use_key_cb = key_operations_use_eddsa_key_pair,
+			.use_key_cb = key_operations_use_ecdsa_key_pair,
 		}
 	},
+#endif /* NRF_CRYPTO_EXAMPLE_DEMO_ECDSA */
+	// {
+	// 	/* The key requires 2 KMU slots */
+	// 	.key_id = PSA_KEY_HANDLE_FROM_CRACEN_KMU_SLOT(CRACEN_KMU_KEY_USAGE_SCHEME_RAW,
+	// 					       PSA_KEY_ID_USER_MIN + 1),
+	// 	.supported_operations = {
+	// 		.gen_key_cb = NULL,
+	// 		.use_key_cb = key_operations_use_eddsa_key_pair,
+	// 	}
+	// },
 
 	/* Generated keys.
 	 * These keys will be erased from the KMU after MCU reset.
 	 */
-	{
-		/* The key requires 1 KMU slot + 2 additional slots
-		 *are required since the key is encrypted
-		 */
-		.key_id = PSA_KEY_HANDLE_FROM_CRACEN_KMU_SLOT(CRACEN_KMU_KEY_USAGE_SCHEME_ENCRYPTED,
-						       PSA_KEY_ID_USER_MIN + 3),
-		.supported_operations = {
-			.gen_key_cb = key_operations_generate_aes_key,
-			.use_key_cb = key_operations_use_aes_key,
-		}
-	},
-	{
-		/* The key requires 2 KMU slots */
-		.key_id = PSA_KEY_HANDLE_FROM_CRACEN_KMU_SLOT(CRACEN_KMU_KEY_USAGE_SCHEME_RAW,
-						       PSA_KEY_ID_USER_MIN + 6),
-		.supported_operations = {
-			.gen_key_cb = key_operations_generate_ecdsa_key_pair,
-			.use_key_cb = key_operations_use_ecdsa_key_pair,
-		}
-	},
+	// {
+	// 	/* The key requires 1 KMU slot + 2 additional slots
+	// 	 *are required since the key is encrypted
+	// 	 */
+	// 	.key_id = PSA_KEY_HANDLE_FROM_CRACEN_KMU_SLOT(CRACEN_KMU_KEY_USAGE_SCHEME_ENCRYPTED,
+	// 					       PSA_KEY_ID_USER_MIN + 3),
+	// 	.supported_operations = {
+	// 		.gen_key_cb = key_operations_generate_aes_key,
+	// 		.use_key_cb = key_operations_use_aes_key,
+	// 	}
+	// },
+	// {
+	// 	/* The key requires 2 KMU slots */
+	// 	.key_id = PSA_KEY_HANDLE_FROM_CRACEN_KMU_SLOT(CRACEN_KMU_KEY_USAGE_SCHEME_RAW,
+	// 					       PSA_KEY_ID_USER_MIN + 6),
+	// 	.supported_operations = {
+	// 		.gen_key_cb = key_operations_generate_ecdsa_key_pair,
+	// 		.use_key_cb = key_operations_use_ecdsa_key_pair,
+	// 	}
+	// },
 };
 
 /* ====================================================================== */
@@ -214,6 +225,9 @@ int main(void)
 	}
 
 	LOG_INF(APP_SUCCESS_MESSAGE);
+	LOG_INF("\n\n");
+
+	demo_ikg_keygen();
 
 	return APP_SUCCESS;
 }

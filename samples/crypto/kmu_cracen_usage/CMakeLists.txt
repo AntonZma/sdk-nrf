@@ -13,4 +13,5 @@ project(kmu_cracen_usage)
 target_sources(app PRIVATE
   src/main.c
   src/key_operations.c
+  src/ikg_keygen.c
 )
