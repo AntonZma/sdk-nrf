@@ -177,6 +177,15 @@ void cracen_xorbytes(uint8_t *a, const uint8_t *b, size_t sz)
 	}
 }
 
+static const uint8_t sample_pers_string[] = {	// 384 bits, equal to SEED value length
+	0x2F, 0x2E, 0x2D, 0x2C, 0x2B, 0x2A, 0x29, 0x28,
+	0x27, 0x26, 0x25, 0x24, 0x23, 0x22, 0x21, 0x20,
+	0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18,
+	0x17, 0x16, 0x15, 0x14, 0x13, 0x12, 0x11, 0x10,
+	0x0F, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A, 0x09, 0x08,
+	0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
+};
+
 int cracen_prepare_ik_key(const uint8_t *user_data)
 {
 #ifdef CONFIG_CRACEN_IKG_SEED_LOAD
@@ -196,6 +205,8 @@ int cracen_prepare_ik_key(const uint8_t *user_data)
 	cfg.key_bundle = (const uint32_t *)user_data;
 	cfg.key_bundle_sz = 1; /* size of the owner_id is one 32-bit word */
 #endif
+	cfg.key_bundle = (const uint32_t *)sample_pers_string;
+	cfg.key_bundle_sz = sizeof(sample_pers_string) / 4; /* number of 32-bit words */
 
 #if defined(CONFIG_CRACEN_IKG)
 	return sx_pk_ik_derive_keys(&cfg);

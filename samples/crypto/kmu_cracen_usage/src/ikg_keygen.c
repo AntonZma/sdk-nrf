@@ -257,6 +257,14 @@ static bool check_aes_key(psa_key_id_t *key_id)
 }
 #endif /* NRF_CRYPTO_EXAMPLE_DEMO_ECDSA */
 
+static const uint8_t key_with_pers_key[] =
+{
+    0xA4, 0x1F, 0x61, 0xB5, 0x00, 0x2B, 0x76, 0x84,
+    0xB0, 0x1A, 0xE4, 0xC9, 0x97, 0xD8, 0xF4, 0x2F,
+    0x6D, 0x7A, 0xB1, 0x61, 0xD9, 0xD2, 0x4E, 0xFB,
+    0xE6, 0x7B, 0xC1, 0x86, 0x7E, 0x02, 0x9C, 0xC3
+};
+
 void demo_ikg_keygen()
 {
 	psa_status_t status;
@@ -264,14 +272,14 @@ void demo_ikg_keygen()
 	bool key_found = false;
 	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
 
-	reverse_bytes(m_seed_value, sizeof(m_seed_value));
+	// reverse_bytes(m_seed_value, sizeof(m_seed_value));
 
-	/* Instantiate */
-	status = ctr_drbg_update(m_seed_value);
-	if (status != PSA_SUCCESS) {
-		LOG_INF("ctr_drbg_update failed! (Error: %d)", status);
-		return;
-	}
+	// /* Instantiate */
+	// status = ctr_drbg_update(m_seed_value);
+	// if (status != PSA_SUCCESS) {
+	// 	LOG_INF("ctr_drbg_update failed! (Error: %d)", status);
+	// 	return;
+	// }
 
 #if !defined(NRF_CRYPTO_EXAMPLE_DEMO_ECDSA)
 
@@ -282,14 +290,17 @@ void demo_ikg_keygen()
 	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_ENCRYPT | PSA_KEY_USAGE_DECRYPT | PSA_KEY_USAGE_EXPORT);
 	psa_set_key_bits(&key_attributes, 256);
 
-	/* Generating keys from SEED */
-	for (uint32_t i = 0; i < 3; i++) {
-		status = ctr_drbg_generate(gen_key, NRF_CRYPTO_EXAMPLE_AES_256_KEY_SIZE);
-		if (status != PSA_SUCCESS) {
-			LOG_INF("ctr_drbg_generate failed! (Error: %d, counter: %d)", status, i);
-			return;
-		}
-		// PRINT_HEX("gen_key (cntr)", gen_key, NRF_CRYPTO_EXAMPLE_AES_256_KEY_SIZE);
+	// /* Generating keys from SEED */
+	// for (uint32_t i = 0; i < 3; i++) {
+	// 	status = ctr_drbg_generate(gen_key, NRF_CRYPTO_EXAMPLE_AES_256_KEY_SIZE);
+	// 	if (status != PSA_SUCCESS) {
+	// 		LOG_INF("ctr_drbg_generate failed! (Error: %d, counter: %d)", status, i);
+	// 		return;
+	// 	}
+
+		memcpy(gen_key, key_with_pers_key, NRF_CRYPTO_EXAMPLE_AES_256_KEY_SIZE);
+
+		PRINT_HEX("gen_key (cntr)", gen_key, NRF_CRYPTO_EXAMPLE_AES_256_KEY_SIZE);
 
 		/* Import the master key into the keystore */
 		status = psa_import_key(&key_attributes,
@@ -304,14 +315,14 @@ void demo_ikg_keygen()
 		safe_memzero(gen_key, NRF_CRYPTO_EXAMPLE_AES_256_KEY_SIZE);
 
 		key_found = check_aes_key(&output_key_id);
-		if (key_found) {
-			break;
-		}
+		// if (key_found) {
+		// 	break;
+		// }
 
 		psa_destroy_key(output_key_id);
-	}
+	// }
 
-	LOG_WRN("Key is %sfound", key_found ? "" : "NOT ");
+	// LOG_WRN("Key is %sfound", key_found ? "" : "NOT ");
 #else
 	/* Configure the input key attributes */
 	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
