@@ -47,6 +47,9 @@ config PSA_CORE_LITE_HAS_VOLATILE_KEY_STORAGE
 	bool
 	default y
 	depends on PSA_WANT_ALG_CTR || PSA_WANT_ALG_AES_KW
+	help
+	  PSA core lite supports AES encryption/decryption only with volatile
+	  AES keys obtained as a result of unwrapping by AES-KW algorithm.
 
 config PSA_CORE_LITE_AES_KEY_MAX_SIZE
 	int "Maximum AES key size"
