@@ -344,7 +344,9 @@ psa_status_t cracen_export_key(const psa_key_attributes_t *attributes, const uin
 	psa_ecc_family_t ecc_fam = PSA_KEY_TYPE_ECC_GET_FAMILY(key_type);
 
 	if (ecc_fam == PSA_ECC_FAMILY_TWISTED_EDWARDS ||
-		ecc_fam == PSA_ECC_FAMILY_SECP_R1 || key_type == PSA_KEY_TYPE_HMAC) {
+	    ecc_fam == PSA_ECC_FAMILY_MONTGOMERY ||
+	    ecc_fam == PSA_ECC_FAMILY_SECP_R1 ||
+	    key_type == PSA_KEY_TYPE_HMAC) {
 		memcpy(data, key_buffer, key_buffer_size);
 		*data_length = key_buffer_size;
 		return PSA_SUCCESS;
