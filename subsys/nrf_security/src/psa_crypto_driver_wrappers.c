@@ -15,8 +15,6 @@
 #include "psa_crypto_driver_wrappers.h"
 #include <string.h>
 
-#include "mbedtls/platform_util.h"
-
 #if defined(MBEDTLS_PSA_CRYPTO_C)
 
 #if defined(CONFIG_HW_UNIQUE_KEY_WRITE_ON_CRYPTO_INIT)
@@ -1239,22 +1237,16 @@ psa_status_t psa_driver_wrapper_cipher_abort(psa_cipher_operation_t *operation)
 #if defined(PSA_NEED_CRACEN_CIPHER_DRIVER)
 	case PSA_CRYPTO_CRACEN_DRIVER_ID:
 		status = cracen_cipher_abort(&operation->ctx.cracen_driver_ctx);
-		mbedtls_platform_zeroize(&operation->ctx.cracen_driver_ctx,
-					 sizeof(operation->ctx.cracen_driver_ctx));
 		return status;
 #endif /* PSA_NEED_CRACEN_CIPHER_DRIVER */
 #if defined(PSA_NEED_CC3XX_CIPHER_DRIVER)
 	case PSA_CRYPTO_CC3XX_DRIVER_ID:
 		status = cc3xx_cipher_abort(&operation->ctx.cc3xx_driver_ctx);
-		mbedtls_platform_zeroize(&operation->ctx.cc3xx_driver_ctx,
-					 sizeof(operation->ctx.cc3xx_driver_ctx));
 		return status;
 #endif /* PSA_NEED_CC3XX_CIPHER_DRIVER */
 #if defined(PSA_NEED_OBERON_CIPHER_DRIVER)
 	case PSA_CRYPTO_OBERON_DRIVER_ID:
 		status = oberon_cipher_abort(&operation->ctx.oberon_driver_ctx);
-		mbedtls_platform_zeroize(&operation->ctx.oberon_driver_ctx,
-					 sizeof(operation->ctx.oberon_driver_ctx));
 		return status;
 #endif /* PSA_NEED_OBERON_CIPHER_DRIVER */
 	default:
