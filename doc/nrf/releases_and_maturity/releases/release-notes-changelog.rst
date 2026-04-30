@@ -286,7 +286,7 @@ Cellular samples
 Cryptography samples
 --------------------
 
-|no_changes_yet_note|
+* Added support for the ``nrf54ls05dk/nrf54ls05a/cpuapp`` board target to all samples, except :ref:`crypto_aes_kw`, :ref:`crypto_kmu_cracen_usage`, and :ref:`crypto_persistent_key`.
 
 Debug samples
 -------------
