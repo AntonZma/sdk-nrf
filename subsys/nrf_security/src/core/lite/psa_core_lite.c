@@ -36,7 +36,7 @@ psa_status_t cracen_kmu_get_builtin_key(psa_drv_slot_number_t slot_number,
 	size_t key_buffer_size, size_t *key_buffer_length);
 
 static psa_status_t get_kmu_key(mbedtls_svc_key_id_t key_id,
-				psa_lite_key_slot_t *key_slot,
+				psa_core_lite_key_slot_t *key_slot,
 				size_t key_buffer_size)
 {
 	psa_status_t status;
@@ -60,7 +60,7 @@ static psa_status_t get_kmu_key(mbedtls_svc_key_id_t key_id,
 
 static inline void clear_all_volatile_keys(void)
 {
-	psa_lite_free_all_key_slots();
+	psa_core_lite_free_all_key_slots();
 }
 
 /* Signature validation algorithms */
@@ -80,7 +80,7 @@ psa_status_t psa_verify_hash(
 	const uint8_t *signature, size_t signature_length)
 {
 	psa_status_t status = PSA_ERROR_NOT_SUPPORTED;
-	psa_lite_key_slot_t pub_key_slot;
+	psa_core_lite_key_slot_t pub_key_slot;
 
 	if (hash == NULL || signature == NULL) {
 		return PSA_ERROR_INVALID_ARGUMENT;
@@ -124,7 +124,7 @@ psa_status_t psa_verify_message(
 	const uint8_t *signature, size_t signature_length)
 {
 	psa_status_t status = PSA_ERROR_NOT_SUPPORTED;
-	psa_lite_key_slot_t pub_key_slot;
+	psa_core_lite_key_slot_t pub_key_slot;
 
 	if (input == NULL || signature == NULL) {
 		return PSA_ERROR_INVALID_ARGUMENT;
@@ -232,21 +232,21 @@ psa_status_t psa_hash_compute(
 
 static psa_status_t get_enc_key(mbedtls_svc_key_id_t key_id,
 				     psa_algorithm_t alg,
-				     psa_lite_key_slot_t **key_slot)
+				     psa_core_lite_key_slot_t **key_slot)
 {
 	if (!VERIFY_ALG_CTR(alg) ||
-	    !psa_lite_key_id_is_volatile(key_id)) {
+	    !psa_core_lite_key_id_is_volatile(key_id)) {
 		return PSA_ERROR_NOT_SUPPORTED;
 	}
 
-	return psa_lite_get_key_slot(&key_id, key_slot);
+	return psa_core_lite_get_key_slot(&key_id, key_slot);
 }
 
 psa_status_t psa_cipher_encrypt_setup(
 	psa_cipher_operation_t *operation, mbedtls_svc_key_id_t key, psa_algorithm_t alg)
 {
 	psa_status_t status = PSA_ERROR_NOT_SUPPORTED;
-	psa_lite_key_slot_t *key_slot;
+	psa_core_lite_key_slot_t *key_slot;
 
 	if (operation == NULL) {
 		return PSA_ERROR_INVALID_ARGUMENT;
@@ -274,7 +274,7 @@ psa_status_t psa_cipher_decrypt_setup(
 	psa_cipher_operation_t *operation, mbedtls_svc_key_id_t key, psa_algorithm_t alg)
 {
 	psa_status_t status = PSA_ERROR_NOT_SUPPORTED;
-	psa_lite_key_slot_t *key_slot;
+	psa_core_lite_key_slot_t *key_slot;
 
 	if (operation == NULL) {
 		return PSA_ERROR_INVALID_ARGUMENT;
@@ -433,8 +433,8 @@ psa_status_t psa_destroy_key(mbedtls_svc_key_id_t key_id)
 	psa_key_attributes_t attr;
 
 #if defined(CONFIG_PSA_CORE_LITE_HAS_VOLATILE_KEY_STORAGE)
-	if (psa_lite_key_id_is_volatile(key_id)) {
-		psa_lite_free_key_slot(key_id);
+	if (psa_core_lite_key_id_is_volatile(key_id)) {
+		psa_core_lite_free_key_slot(key_id);
 		return PSA_SUCCESS;
 	}
 #endif /* CONFIG_PSA_CORE_LITE_HAS_VOLATILE_KEY_STORAGE */
@@ -482,8 +482,8 @@ psa_status_t psa_unwrap_key(const psa_key_attributes_t *attributes,
 			    mbedtls_svc_key_id_t *key)
 {
 	psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
-	psa_lite_key_slot_t wrapping_key_slot;
-	psa_lite_key_slot_t *key_slot;
+	psa_core_lite_key_slot_t wrapping_key_slot;
+	psa_core_lite_key_slot_t *key_slot;
 	size_t storage_size;
 	size_t required_key_size_bits;
 
@@ -506,7 +506,7 @@ psa_status_t psa_unwrap_key(const psa_key_attributes_t *attributes,
 		return status;
 	}
 
-	status = psa_lite_get_key_slot(key, &key_slot);
+	status = psa_core_lite_get_key_slot(key, &key_slot);
 	if (status != PSA_SUCCESS) {
 		safe_memzero(&wrapping_key_slot, sizeof(wrapping_key_slot));
 		goto error;
@@ -539,7 +539,7 @@ psa_status_t psa_unwrap_key(const psa_key_attributes_t *attributes,
 	return status;
 
 error:
-	psa_lite_free_key_slot(*key);
+	psa_core_lite_free_key_slot(*key);
 	return status;
 }
 
@@ -642,7 +642,7 @@ psa_status_t psa_key_derivation_key_agreement(psa_key_derivation_operation_t *op
 					      size_t peer_key_length)
 {
 	psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
-	psa_lite_key_slot_t key_slot;
+	psa_core_lite_key_slot_t key_slot;
 	psa_algorithm_t ka_alg;
 	uint8_t shared_secret[PSA_RAW_KEY_AGREEMENT_OUTPUT_MAX_SIZE] = {};
 	size_t shared_secret_length = 0;
@@ -727,7 +727,7 @@ psa_status_t psa_key_derivation_output_key(const psa_key_attributes_t *attribute
 					   mbedtls_svc_key_id_t *key)
 {
 	psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
-	psa_lite_key_slot_t *key_slot;
+	psa_core_lite_key_slot_t *key_slot;
 	psa_key_type_t key_type;
 	size_t key_bits;
 	size_t key_bytes;
@@ -757,7 +757,7 @@ psa_status_t psa_key_derivation_output_key(const psa_key_attributes_t *attribute
 		goto error;
 	}
 
-	status = psa_lite_get_key_slot(key, &key_slot);
+	status = psa_core_lite_get_key_slot(key, &key_slot);
 	if (status != PSA_SUCCESS) {
 		goto error;
 	}
@@ -810,14 +810,14 @@ psa_status_t psa_key_derivation_abort(psa_key_derivation_operation_t *operation)
 
 static inline psa_status_t get_mac_key(mbedtls_svc_key_id_t key_id,
 				       psa_algorithm_t alg,
-				       psa_lite_key_slot_t **key_slot)
+				       psa_core_lite_key_slot_t **key_slot)
 {
 	if (!VERIFY_ALG_HMAC(alg) ||
-	    !psa_lite_key_id_is_volatile(key_id)) {
+	    !psa_core_lite_key_id_is_volatile(key_id)) {
 		return PSA_ERROR_NOT_SUPPORTED;
 	}
 
-	return psa_lite_get_key_slot(&key_id, key_slot);
+	return psa_core_lite_get_key_slot(&key_id, key_slot);
 }
 
 psa_status_t psa_mac_verify(mbedtls_svc_key_id_t key,
@@ -828,7 +828,7 @@ psa_status_t psa_mac_verify(mbedtls_svc_key_id_t key,
 			    size_t mac_length)
 {
 	psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
-	psa_lite_key_slot_t *key_slot;
+	psa_core_lite_key_slot_t *key_slot;
 	psa_key_type_t key_type;
 	size_t key_bits;
 	size_t operation_mac_size;
