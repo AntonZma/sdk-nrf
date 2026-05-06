@@ -29,6 +29,8 @@
 #include "exception_info.h"
 #include "tfm_arch.h"
 
+#include <hal/nrf_mpc.h>
+
 #if defined(TFM_PARTITION_CRYPTO)
 static enum tfm_hal_status_t crypto_platform_init(void)
 {
@@ -119,6 +121,39 @@ static void log_pin_security_configuration(void)
 #endif
 }
 
+static void log_memory_security_configuration(void)
+{
+	uint32_t sau_regions_count = SAU->TYPE;
+	uint32_t limit_address;
+
+	SPMLOG_INFMSG("\r\nMemory configuration:\r\n***\r\n");
+
+	/* SAU */
+
+	for (uint32_t i = 0; i < sau_regions_count; i++) {
+		SAU->RNR = i;
+
+		/** TODO: Check NSC bit (SAU_RLAR_NSC_Msk) to know whether a region is secure or non-secure, 
+		 *        however this allows to distinguish between Non-secure and Secure NSC,
+		 * 	  how to determine if the region is Secure?
+		 * 
+		 * 	  OR is do we configure non-secure regions only here (same as for MPC),
+		 * 	  leaving the rest as (implicitly) Secure? 
+		*/
+		limit_address = SAU->RLAR & ~(SAU_RLAR_ENABLE_Msk | SAU_RLAR_NSC_Msk);
+
+		SPMLOG_INFMSGVAL("SAU Region: ", SAU->RNR);
+		SPMLOG_INFMSGVAL("Base addr : ", SAU->RBAR);
+		SPMLOG_INFMSGVAL("Limit addr: ", limit_address);
+		SPMLOG_INFMSG("\r\n");
+	}
+	SPMLOG_INFMSG("***\r\n");
+
+	/* MPC */
+
+	// nrf_mpc_override_startaddr_get
+}
+
 enum tfm_hal_status_t tfm_hal_platform_init(void)
 {
 	enum tfm_hal_status_t status;
@@ -154,6 +189,7 @@ enum tfm_hal_status_t tfm_hal_platform_init(void)
 #endif /* defined(NRF_PROVISIONING) */
 
 	log_pin_security_configuration();
+	log_memory_security_configuration();
 
 	return TFM_HAL_SUCCESS;
 }
