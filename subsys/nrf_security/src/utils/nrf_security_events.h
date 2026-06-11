@@ -31,7 +31,7 @@ typedef volatile uint32_t *nrf_security_event_t;
 
 #define NRF_SECURITY_EVENT_DEFINE(event_name)                                                      \
 	uint32_t volatile local_##event_name;                                                      \
-	nrf_security_event_t event_name = &local_##event_name;
+	nrf_security_event_t const event_name = &local_##event_name;
 
 #endif
 
