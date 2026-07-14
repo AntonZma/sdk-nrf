@@ -5,16 +5,15 @@
  */
 
 /** @file
- * @brief ML-DSA signature verification for the CRACEN PSA driver (internal use only).
+ * @brief ML-DSA signing and signature verification for the CRACEN PSA driver (internal use only).
  *
  * @note These APIs are for internal use only. Applications must use the
  *          PSA Crypto API (psa_* functions) instead of calling these functions
  *          directly.
  *
  * @details
- * This is the implementation of ML-DSA.Verify algorithm.
+ * This is the implementation of the ML-DSA.Sign and ML-DSA.Verify algorithms.
  * It follows NIST FIPS 204 and uses the CRACEN hardware SHAKE128/SHAKE256 XOF algorithms.
- * Only signature verification is implemented; key generation and signing are not supported now.
  */
 
 #ifndef CRACEN_PSA_ML_DSA_H
@@ -49,5 +48,52 @@ psa_status_t cracen_ml_dsa_verify(bool is_message,
 				  size_t input_length, const uint8_t *context,
 				  size_t context_length, const uint8_t *signature,
 				  size_t signature_length);
+
+/** @brief Produce a pure ML-DSA or HashML-DSA signature over a message or hash.
+ *
+ * @param[in] is_message        True if input is a message, false - if hash.
+ * @param[in] attributes        Key attributes (must describe an ML-DSA key pair).
+ * @param[in] key_buffer        ML-DSA key-pair seed (32 bytes).
+ * @param[in] key_buffer_size   Size of @p key_buffer in bytes.
+ * @param[in] alg               Asymmetric signature algorithm.
+ * @param[in] input             Message (or hash) to be signed.
+ * @param[in] input_length      Length of @p input in bytes.
+ * @param[in] context           Context string (may be NULL when empty).
+ * @param[in] context_length    Length of @p context in bytes (must be < 256).
+ * @param[out] signature        Buffer to store the signature.
+ * @param[in] signature_size    Size of @p signature in bytes.
+ * @param[out] signature_length Length of the produced signature in bytes.
+ *
+ * @retval PSA_SUCCESS
+ * @retval PSA_ERROR_NOT_SUPPORTED
+ * @retval PSA_ERROR_INVALID_ARGUMENT
+ * @retval PSA_ERROR_BUFFER_TOO_SMALL
+ */
+psa_status_t cracen_ml_dsa_sign(bool is_message,
+				const psa_key_attributes_t *attributes,
+				const uint8_t *key_buffer, size_t key_buffer_size,
+				psa_algorithm_t alg, const uint8_t *input,
+				size_t input_length, const uint8_t *context,
+				size_t context_length, uint8_t *signature,
+				size_t signature_size, size_t *signature_length);
+
+/** @brief Derive and export the ML-DSA public key from a key-pair seed.
+ *
+ * @param[in] attributes        Key attributes (must describe an ML-DSA key pair).
+ * @param[in] key_buffer        ML-DSA key-pair seed (32 bytes).
+ * @param[in] key_buffer_size   Size of @p key_buffer in bytes.
+ * @param[out] data             Buffer to store the encoded public key.
+ * @param[in] data_size         Size of @p data in bytes.
+ * @param[out] data_length      Length of the exported public key in bytes.
+ *
+ * @retval PSA_SUCCESS
+ * @retval PSA_ERROR_NOT_SUPPORTED
+ * @retval PSA_ERROR_INVALID_ARGUMENT
+ * @retval PSA_ERROR_BUFFER_TOO_SMALL
+ */
+psa_status_t cracen_ml_dsa_export_public_key_from_seed(const psa_key_attributes_t *attributes,
+						       const uint8_t *key_buffer,
+						       size_t key_buffer_size, uint8_t *data,
+						       size_t data_size, size_t *data_length);
 
 #endif /* CRACEN_PSA_ML_DSA_H */
