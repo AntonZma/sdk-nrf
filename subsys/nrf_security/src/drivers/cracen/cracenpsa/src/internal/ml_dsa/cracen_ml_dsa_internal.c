@@ -5,7 +5,8 @@
  */
 
 #include "cracen_ml_dsa_internal.h"
-#include <cracen_psa_xof.h>
+#include <psa/crypto.h>
+#include <oberon_xof.h>
 #include <cracen/common.h>
 #include <zephyr/toolchain.h>
 
@@ -122,23 +123,23 @@ int32_t cracen_ml_dsa_ge_bound_mask(int32_t magnitude, int32_t bound)
 psa_status_t cracen_ml_dsa_shake256_digest(const uint8_t *in, size_t in_len,
 					   uint8_t *out, size_t out_len)
 {
-	cracen_xof_operation_t operation;
+	oberon_xof_operation_t operation = {};
 	psa_status_t status;
 
-	status = cracen_xof_setup(&operation, PSA_ALG_SHAKE256);
+	status = oberon_xof_setup(&operation, PSA_ALG_SHAKE256);
 	if (status != PSA_SUCCESS) {
 		return status;
 	}
 
-	status = cracen_xof_update(&operation, in, in_len);
+	status = oberon_xof_update(&operation, in, in_len);
 	if (status != PSA_SUCCESS) {
 		goto exit;
 	}
 
-	status = cracen_xof_output(&operation, out, out_len);
+	status = oberon_xof_output(&operation, out, out_len);
 
 exit:
-	(void)cracen_xof_abort(&operation);
+	(void)oberon_xof_abort(&operation);
 	return status;
 }
 
@@ -148,53 +149,53 @@ psa_status_t cracen_ml_dsa_compute_msg_representative(const uint8_t *pk_digest, 
 						      const uint8_t *msg, size_t msg_len,
 						      uint8_t *msg_representative)
 {
-	cracen_xof_operation_t operation;
+	oberon_xof_operation_t operation = {};
 	psa_status_t status;
 	uint8_t prefix[2];
 
 	prefix[0] = domain;
 	prefix[1] = (uint8_t)ctx_len;
 
-	status = cracen_xof_setup(&operation, PSA_ALG_SHAKE256);
+	status = oberon_xof_setup(&operation, PSA_ALG_SHAKE256);
 	if (status != PSA_SUCCESS) {
 		return status;
 	}
 
-	status = cracen_xof_update(&operation, pk_digest, ML_DSA_PK_DIGEST_SZ_BYTES);
+	status = oberon_xof_update(&operation, pk_digest, ML_DSA_PK_DIGEST_SZ_BYTES);
 	if (status != PSA_SUCCESS) {
 		goto exit;
 	}
 
-	status = cracen_xof_update(&operation, prefix, sizeof(prefix));
+	status = oberon_xof_update(&operation, prefix, sizeof(prefix));
 	if (status != PSA_SUCCESS) {
 		goto exit;
 	}
 
 	if (ctx_len > 0) {
-		status = cracen_xof_update(&operation, ctx, ctx_len);
+		status = oberon_xof_update(&operation, ctx, ctx_len);
 		if (status != PSA_SUCCESS) {
 			goto exit;
 		}
 	}
 
 	if (oid_len > 0) {
-		status = cracen_xof_update(&operation, oid, oid_len);
+		status = oberon_xof_update(&operation, oid, oid_len);
 		if (status != PSA_SUCCESS) {
 			goto exit;
 		}
 	}
 
 	if (msg_len > 0) {
-		status = cracen_xof_update(&operation, msg, msg_len);
+		status = oberon_xof_update(&operation, msg, msg_len);
 		if (status != PSA_SUCCESS) {
 			goto exit;
 		}
 	}
 
-	status = cracen_xof_output(&operation, msg_representative, ML_DSA_MSG_RPZTV_SZ_BYTES);
+	status = oberon_xof_output(&operation, msg_representative, ML_DSA_MSG_RPZTV_SZ_BYTES);
 
 exit:
-	(void)cracen_xof_abort(&operation);
+	(void)oberon_xof_abort(&operation);
 	return status;
 }
 
@@ -205,26 +206,26 @@ psa_status_t cracen_ml_dsa_compute_commitment_hash(const uint8_t *msg_representa
 						   size_t commitment_hash_len)
 {
 	psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
-	cracen_xof_operation_t operation;
+	oberon_xof_operation_t operation = {};
 
-	status = cracen_xof_setup(&operation, PSA_ALG_SHAKE256);
+	status = oberon_xof_setup(&operation, PSA_ALG_SHAKE256);
 	if (status != PSA_SUCCESS) {
 		return status;
 	}
 
-	status = cracen_xof_update(&operation, msg_representative, ML_DSA_MSG_RPZTV_SZ_BYTES);
+	status = oberon_xof_update(&operation, msg_representative, ML_DSA_MSG_RPZTV_SZ_BYTES);
 	if (status != PSA_SUCCESS) {
 		goto exit;
 	}
 
-	status = cracen_xof_update(&operation, commitment, commitment_len);
+	status = oberon_xof_update(&operation, commitment, commitment_len);
 	if (status != PSA_SUCCESS) {
 		goto exit;
 	}
 
-	status = cracen_xof_output(&operation, commitment_hash, commitment_hash_len);
+	status = oberon_xof_output(&operation, commitment_hash, commitment_hash_len);
 
 exit:
-	(void)cracen_xof_abort(&operation);
+	(void)oberon_xof_abort(&operation);
 	return status;
 }

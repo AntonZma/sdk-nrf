@@ -497,8 +497,8 @@ config PSA_NEED_CRACEN_DETERMINISTIC_HASH_ML_DSA
 config PSA_NEED_CRACEN_ASYMMETRIC_SIGNATURE_ANY_ML_DSA
 	bool
 	default y
-	depends on PSA_NEED_CRACEN_SHAKE128
-	depends on PSA_NEED_CRACEN_SHAKE256
+#	depends on PSA_NEED_CRACEN_SHAKE128
+#	depends on PSA_NEED_CRACEN_SHAKE256
 	depends on \
 		PSA_NEED_CRACEN_ML_DSA                      || \
 		PSA_NEED_CRACEN_DETERMINISTIC_ML_DSA        || \
@@ -653,26 +653,26 @@ config PSA_NEED_CRACEN_HASH_DRIVER
 
 # CRACEN XOF Driver
 
-config PSA_NEED_CRACEN_SHAKE128
-	bool
-	default y
-	select PSA_ACCEL_SHAKE128
-	depends on PSA_WANT_ALG_SHAKE128
-	depends on PSA_USE_CRACEN_XOF_DRIVER
-
-config PSA_NEED_CRACEN_SHAKE256
-	bool
-	default y
-	select PSA_ACCEL_SHAKE256
-	depends on PSA_WANT_ALG_SHAKE256
-	depends on PSA_USE_CRACEN_XOF_DRIVER
-
-config PSA_NEED_CRACEN_XOF_DRIVER
-	bool
-	default y
-	depends on \
-		PSA_NEED_CRACEN_SHAKE128 || \
-		PSA_NEED_CRACEN_SHAKE256
+#config PSA_NEED_CRACEN_SHAKE128
+#	bool
+#	default y
+#	select PSA_ACCEL_SHAKE128
+#	depends on PSA_WANT_ALG_SHAKE128
+#	depends on PSA_USE_CRACEN_XOF_DRIVER
+#
+#config PSA_NEED_CRACEN_SHAKE256
+#	bool
+#	default y
+#	select PSA_ACCEL_SHAKE256
+#	depends on PSA_WANT_ALG_SHAKE256
+#	depends on PSA_USE_CRACEN_XOF_DRIVER
+#
+#config PSA_NEED_CRACEN_XOF_DRIVER
+#	bool
+#	default y
+#	depends on \
+#		PSA_NEED_CRACEN_SHAKE128 || \
+#		PSA_NEED_CRACEN_SHAKE256
 
 # CRACEN Key Generation Driver
 

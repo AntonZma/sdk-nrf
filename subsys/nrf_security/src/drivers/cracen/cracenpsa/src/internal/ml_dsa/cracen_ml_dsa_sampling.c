@@ -8,7 +8,8 @@
 #include "cracen_ml_dsa_packing.h"
 #include "cracen_ml_dsa_sampling.h"
 
-#include <cracen_psa_xof.h>
+#include <psa/crypto.h>
+#include <oberon_xof.h>
 #include <cracen_psa_primitives.h>
 
 #include <nrf_security_mem_helpers.h>
@@ -39,24 +40,24 @@ static int32_t coeff_from_three_bytes(uint8_t b0, uint8_t b1, uint8_t b2)
 psa_status_t cracen_ml_dsa_rej_ntt_poly(const uint8_t *seed, ml_dsa_poly_vector_t *out)
 {
 	psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
-	cracen_xof_operation_t operation;
+	oberon_xof_operation_t operation = {};
 
 	uint8_t bytes[ML_DSA_CANDIDATE_SIZE_BYTES * ML_DSA_MAX_CANDIDATES_COUNT];
 	size_t bytes_to_squeeze = sizeof(bytes);
 	size_t pos = 0;
 	uint32_t j = 0;
 
-	status = cracen_xof_setup(&operation, PSA_ALG_SHAKE128);
+	status = oberon_xof_setup(&operation, PSA_ALG_SHAKE128);
 	if (status != PSA_SUCCESS) {
 		return status;
 	}
 
-	status = cracen_xof_update(&operation, seed, ML_DSA_REJ_NTT_SEED_BYTES);
+	status = oberon_xof_update(&operation, seed, ML_DSA_REJ_NTT_SEED_BYTES);
 	if (status != PSA_SUCCESS) {
 		goto exit;
 	}
 
-	status = cracen_xof_output(&operation, bytes, bytes_to_squeeze);
+	status = oberon_xof_output(&operation, bytes, bytes_to_squeeze);
 	if (status != PSA_SUCCESS) {
 		goto exit;
 	}
@@ -69,7 +70,7 @@ psa_status_t cracen_ml_dsa_rej_ntt_poly(const uint8_t *seed, ml_dsa_poly_vector_
 			bytes_to_squeeze =
 				ML_DSA_CANDIDATE_SIZE_BYTES * (ML_DSA_MAX_CANDIDATES_COUNT - j);
 
-			status = cracen_xof_output(&operation, bytes, bytes_to_squeeze);
+			status = oberon_xof_output(&operation, bytes, bytes_to_squeeze);
 			if (status != PSA_SUCCESS) {
 				goto exit;
 			}
@@ -86,7 +87,7 @@ psa_status_t cracen_ml_dsa_rej_ntt_poly(const uint8_t *seed, ml_dsa_poly_vector_
 
 exit:
 	safe_memzero(bytes, sizeof(bytes));
-	(void)cracen_xof_abort(&operation);
+	(void)oberon_xof_abort(&operation);
 	return status;
 }
 
@@ -94,22 +95,22 @@ psa_status_t cracen_ml_dsa_sample_in_ball(const uint8_t *seed, size_t seed_len,
 					  uint8_t hamming_weight,
 					  ml_dsa_poly_vector_t *out_vec)
 {
-	cracen_xof_operation_t operation;
+	oberon_xof_operation_t operation = {};
 	psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
 	uint32_t start_index = ML_DSA_POLY_COEFFS_COUNT - hamming_weight;
 	uint64_t signs; /* used as a bit string of size 64 */
 
-	status = cracen_xof_setup(&operation, PSA_ALG_SHAKE256);
+	status = oberon_xof_setup(&operation, PSA_ALG_SHAKE256);
 	if (status != PSA_SUCCESS) {
 		return status;
 	}
 
-	status = cracen_xof_update(&operation, seed, seed_len);
+	status = oberon_xof_update(&operation, seed, seed_len);
 	if (status != PSA_SUCCESS) {
 		goto exit;
 	}
 
-	status = cracen_xof_output(&operation, (uint8_t *)&signs, sizeof(signs));
+	status = oberon_xof_output(&operation, (uint8_t *)&signs, sizeof(signs));
 	if (status != PSA_SUCCESS) {
 		goto exit;
 	}
@@ -120,7 +121,7 @@ psa_status_t cracen_ml_dsa_sample_in_ball(const uint8_t *seed, size_t seed_len,
 		uint32_t mask;
 
 		do {
-			status = cracen_xof_output(&operation, &pos, 1);
+			status = oberon_xof_output(&operation, &pos, 1);
 			if (status != PSA_SUCCESS) {
 				goto exit;
 			}
@@ -134,7 +135,7 @@ psa_status_t cracen_ml_dsa_sample_in_ball(const uint8_t *seed, size_t seed_len,
 	}
 
 exit:
-	(void)cracen_xof_abort(&operation);
+	(void)oberon_xof_abort(&operation);
 	signs = 0;
 	return status;
 }
@@ -164,15 +165,15 @@ static psa_status_t rej_bounded_poly(const ml_dsa_params_t *alg_params, const ui
 				     ml_dsa_poly_vector_t *out)
 {
 	psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
-	cracen_xof_operation_t operation;
+	oberon_xof_operation_t operation = {};
 	uint32_t j = 0;
 
-	status = cracen_xof_setup(&operation, PSA_ALG_SHAKE256);
+	status = oberon_xof_setup(&operation, PSA_ALG_SHAKE256);
 	if (status != PSA_SUCCESS) {
 		return status;
 	}
 
-	status = cracen_xof_update(&operation, seed, ML_DSA_REJ_BOUNDED_SEED_BYTES);
+	status = oberon_xof_update(&operation, seed, ML_DSA_REJ_BOUNDED_SEED_BYTES);
 	if (status != PSA_SUCCESS) {
 		goto exit;
 	}
@@ -185,7 +186,7 @@ static psa_status_t rej_bounded_poly(const ml_dsa_params_t *alg_params, const ui
 		uint32_t mask0;
 		uint32_t mask1;
 
-		status = cracen_xof_output(&operation, &z, 1);
+		status = oberon_xof_output(&operation, &z, 1);
 		if (status != PSA_SUCCESS) {
 			goto exit;
 		}
@@ -198,7 +199,7 @@ static psa_status_t rej_bounded_poly(const ml_dsa_params_t *alg_params, const ui
 	}
 
 exit:
-	cracen_xof_abort(&operation);
+	oberon_xof_abort(&operation);
 	return status;
 }
 

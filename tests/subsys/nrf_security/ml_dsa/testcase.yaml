@@ -24,5 +24,5 @@ tests:
 
   ml_dsa.cracen:
     extra_args:
-      - CONFIG_PSA_CRYPTO_DRIVER_OBERON=n
+      - CONFIG_PSA_CRYPTO_DRIVER_OBERON=y
       - CONFIG_PSA_CRYPTO_DRIVER_CRACEN=y

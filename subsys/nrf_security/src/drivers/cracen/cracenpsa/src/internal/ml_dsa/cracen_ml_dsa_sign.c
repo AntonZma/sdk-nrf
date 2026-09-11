@@ -13,14 +13,15 @@
 #include "cracen_ml_dsa_sampling.h"
 #include "cracen_ml_dsa_sign.h"
 
-#include <cracen_psa_xof.h>
+#include <psa/crypto.h>
+#include <psa/crypto_values.h>
+
+#include <oberon_xof.h>
 #include <cracen_psa_primitives.h>
 #include <cracen_psa_ctr_drbg.h>
 #include <cracen/common.h>
 #include <nrf_security_mem_helpers.h>
 
-#include <psa/crypto.h>
-#include <psa/crypto_values.h>
 #include <string.h>
 
 /* Upper bound on ML-DSA.Sign_internal rejection-loop iterations to avoid infinite loops. */
@@ -60,32 +61,32 @@ static psa_status_t compute_priv_rand_seed(const uint8_t *k_secret, const uint8_
 					   const uint8_t *mu, uint8_t *priv_rand_seed)
 {
 	psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
-	cracen_xof_operation_t operation;
+	oberon_xof_operation_t operation = {};
 
-	status = cracen_xof_setup(&operation, PSA_ALG_SHAKE256);
+	status = oberon_xof_setup(&operation, PSA_ALG_SHAKE256);
 	if (status != PSA_SUCCESS) {
 		return status;
 	}
 
-	status = cracen_xof_update(&operation, k_secret, ML_DSA_K_SZ_BYTES);
+	status = oberon_xof_update(&operation, k_secret, ML_DSA_K_SZ_BYTES);
 	if (status != PSA_SUCCESS) {
 		goto exit;
 	}
 
-	status = cracen_xof_update(&operation, rnd, ML_DSA_RND_SZ_BYTES);
+	status = oberon_xof_update(&operation, rnd, ML_DSA_RND_SZ_BYTES);
 	if (status != PSA_SUCCESS) {
 		goto exit;
 	}
 
-	status = cracen_xof_update(&operation, mu, ML_DSA_MSG_RPZTV_SZ_BYTES);
+	status = oberon_xof_update(&operation, mu, ML_DSA_MSG_RPZTV_SZ_BYTES);
 	if (status != PSA_SUCCESS) {
 		goto exit;
 	}
 
-	status = cracen_xof_output(&operation, priv_rand_seed, ML_DSA_PRIV_SEED_BYTES);
+	status = oberon_xof_output(&operation, priv_rand_seed, ML_DSA_PRIV_SEED_BYTES);
 
 exit:
-	(void)cracen_xof_abort(&operation);
+	(void)oberon_xof_abort(&operation);
 	return status;
 }
 
