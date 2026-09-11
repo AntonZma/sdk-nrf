@@ -37,10 +37,10 @@ static psa_status_t derive_pk(const ml_dsa_params_t *alg_params, const uint8_t *
 	status = cracen_ml_dsa_keygen_internal(alg_params, seed, k_secret, s1_hat, s2_hat, t0_hat,
 					       pk);
 
-	safe_memzero(s1_hat, sizeof(s1_hat));
-	safe_memzero(s2_hat, sizeof(s2_hat));
-	safe_memzero(t0_hat, sizeof(t0_hat));
-	safe_memzero(k_secret, sizeof(k_secret));
+	// safe_memzero(s1_hat, sizeof(s1_hat));
+	// safe_memzero(s2_hat, sizeof(s2_hat));
+	// safe_memzero(t0_hat, sizeof(t0_hat));
+	// safe_memzero(k_secret, sizeof(k_secret));
 	return status;
 }
 

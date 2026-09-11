@@ -118,9 +118,9 @@ psa_status_t cracen_ml_dsa_keygen_internal(const ml_dsa_params_t *alg_params, co
 	}
 
 exit:
-	safe_memzero(h_out, sizeof(h_out));
-	safe_memzero(temp_seed, sizeof(temp_seed));
-	safe_memzero(&acc, sizeof(acc));
-	safe_memzero(&t1, sizeof(t1));
+	// safe_memzero(h_out, sizeof(h_out));
+	// safe_memzero(temp_seed, sizeof(temp_seed));
+	// safe_memzero(&acc, sizeof(acc));
+	// safe_memzero(&t1, sizeof(t1));
 	return status;
 }
