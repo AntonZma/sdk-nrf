@@ -100,21 +100,61 @@ static int32_t montgomery_mul(int32_t a, int32_t b)
 void cracen_ml_dsa_ntt(ml_dsa_poly_vector_t *vec)
 {
 	int32_t *w = vec->coeffs;
-	uint8_t k = 1;
 
-	for (uint32_t len = 128; len >= 1; len >>= 1) {
-		for (uint32_t start = 0; start < ML_DSA_POLY_COEFFS_COUNT; start += 2 * len) {
-			int32_t zeta = zetas[k++];
+	/** Radix-4: two Cooley-Tukey layers are merged into one pass over the
+	 *  coefficients. A group of four coefficients is loaded once, both layers are
+	 *  applied in registers and the group is stored once. The multiplication and
+	 *  addition counts are the same as for two radix-2 layers, but the eight
+	 *  layers now cost four passes worth of load/store traffic instead of eight.
+	 */
+	for (uint32_t len = 64; len >= 1; len >>= 2) {
+		uint32_t k = ML_DSA_POLY_COEFFS_COUNT / (4 * len);
+
+		for (uint32_t start = 0; start < ML_DSA_POLY_COEFFS_COUNT; start += 4 * len) {
+			/** zeta_0 belongs to the (2 * len) layer. Its two (len) layer
+			 *  sub-blocks always sit at table indices 2k and 2k + 1, since the
+			 *  zetas are stored in bit-reversed order.
+			 */
+			int32_t zeta_0 = zetas[k];
+			int32_t zeta_1 = zetas[2 * k];
+			int32_t zeta_2 = zetas[2 * k + 1];
+
+			k++;
 
 			for (uint32_t j = start; j < start + len; j++) {
-				int32_t t = montgomery_mul(zeta, w[j + len]);
+				int32_t a = w[j];
+				int32_t b = w[j + len];
+				int32_t c = w[j + 2 * len];
+				int32_t d = w[j + 3 * len];
+				int32_t t;
 
-				/** Lazy reduction: |t| < q, so each of the 8 stages grows
+				/** Lazy reduction: |t| < q, so each of the 8 layers grows
 				 *  the coefficient bound by at most q. With |input| < q the
 				 *  output stays below 9q, well within int32.
 				 */
-				w[j + len] = w[j] - t;
-				w[j] = w[j] + t;
+
+				/* Layer 2 * len. */
+				t = montgomery_mul(zeta_0, c);
+				c = a - t;
+				a = a + t;
+
+				t = montgomery_mul(zeta_0, d);
+				d = b - t;
+				b = b + t;
+
+				/* Layer len. */
+				t = montgomery_mul(zeta_1, b);
+				b = a - t;
+				a = a + t;
+
+				t = montgomery_mul(zeta_2, d);
+				d = c - t;
+				c = c + t;
+
+				w[j] = a;
+				w[j + len] = b;
+				w[j + 2 * len] = c;
+				w[j + 3 * len] = d;
 			}
 		}
 	}
@@ -123,7 +163,6 @@ void cracen_ml_dsa_ntt(ml_dsa_poly_vector_t *vec)
 void cracen_ml_dsa_ntt_inversed(ml_dsa_poly_vector_t *vec)
 {
 	int32_t *w = vec->coeffs;
-	uint8_t k = ML_DSA_POLY_COEFFS_COUNT - 1;
 	/* (256^(-1) * R^2) mod q. The final Montgomery multiplication by this factor
 	 * both applies the 1/256 scaling of the inverse NTT and cancels the R^(-1)
 	 * factor that cracen_ml_dsa_multiply_ntt() leaves on every coefficient.
@@ -138,16 +177,49 @@ void cracen_ml_dsa_ntt_inversed(ml_dsa_poly_vector_t *vec)
 		w[j] = reduce32(w[j]);
 	}
 
-	for (uint32_t len = 1; len < ML_DSA_POLY_COEFFS_COUNT; len <<= 1) {
-		for (uint32_t start = 0; start < ML_DSA_POLY_COEFFS_COUNT; start += 2 * len) {
-			int32_t zeta = -zetas[k--];
+	/** Radix-4, mirroring cracen_ml_dsa_ntt(): the (len) and (2 * len) Gentleman-Sande
+	 *  layers are applied to a group of four coefficients held in registers, halving
+	 *  the number of passes over the coefficients.
+	 */
+	for (uint32_t len = 1; len < ML_DSA_POLY_COEFFS_COUNT; len <<= 2) {
+		uint32_t k = ML_DSA_POLY_COEFFS_COUNT / (2 * len) - 1;
+
+		for (uint32_t start = 0; start < ML_DSA_POLY_COEFFS_COUNT; start += 4 * len) {
+			int32_t zeta_0 = -zetas[k];
+			int32_t zeta_1 = -zetas[2 * k + 1];
+			int32_t zeta_2 = -zetas[2 * k];
+
+			k--;
 
 			for (uint32_t j = start; j < start + len; j++) {
-				int32_t t = w[j];
+				int32_t a = w[j];
+				int32_t b = w[j + len];
+				int32_t c = w[j + 2 * len];
+				int32_t d = w[j + 3 * len];
+				int32_t t;
 
-				w[j] = t + w[j + len];
-				w[j + len] = t - w[j + len];
-				w[j + len] = montgomery_mul(zeta, w[j + len]);
+				/* Layer len. */
+				t = a;
+				a = t + b;
+				b = montgomery_mul(zeta_1, t - b);
+
+				t = c;
+				c = t + d;
+				d = montgomery_mul(zeta_2, t - d);
+
+				/* Layer 2 * len. */
+				t = a;
+				a = t + c;
+				c = montgomery_mul(zeta_0, t - c);
+
+				t = b;
+				b = t + d;
+				d = montgomery_mul(zeta_0, t - d);
+
+				w[j] = a;
+				w[j + len] = b;
+				w[j + 2 * len] = c;
+				w[j + 3 * len] = d;
 			}
 		}
 	}
